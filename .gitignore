@@ -1,0 +1,30 @@
+# Environnement Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Données personnelles / sensibles - NE JAMAIS PUBLIER
+candidatures/
+preuves_recherche_stage/
+logement_scraper/
+uploads/
+jobs.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Divers
+test.txt
+*.tmp
+.DS_Store
+Thumbs.db

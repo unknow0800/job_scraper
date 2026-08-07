@@ -1,0 +1,2579 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Opportunity Pulse — Dashboard</title>
+        <link rel="preconnect" href="https://api.fontshare.com"/>
+        <link
+            href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&f[]=jet-brains-mono@400,700&display=swap"
+            rel="stylesheet"/>
+        <style>
+            /* Variables de thème: changer ces valeurs modifie les couleurs de toute l'interface. */
+            :root,
+            [data-theme="light"] {
+                --bg: #f5f3f0;
+                --surface: #fffbf8;
+                --surface-2: #f0ebe6;
+                --border: #e5dcd2;
+                --text: #2a2520;
+                --muted: #7a746b;
+                --faint: #a49d92;
+                --primary: #2d5a5e;
+                --primary-soft: #d4e5e7;
+                --success: #437a22;
+                --warning: #9c5b1f;
+                --error: #a13544;
+                --shadow: 0 14px 30px rgba(32,28,24,.06);
+                --radius: 18px;
+                --radius-sm: 12px;
+                --sidebar: 284px;
+                --font: 'Satoshi',system-ui,sans-serif;
+                --mono: 'JetBrains Mono',monospace;
+            }
+            [data-theme="dark"] {
+                /* Le thème sombre reprend les mêmes variables avec d'autres couleurs. */
+                --bg: #1a1816;
+                --surface: #20201d;
+                --surface-2: #26251f;
+                --border: #3a3531;
+                --text: #e8e3da;
+                --muted: #ada599;
+                --faint: #7d7668;
+                --primary: #5a8c95;
+                --primary-soft: rgba(90,140,149,.16);
+                --shadow: 0 18px 36px rgba(0,0,0,.32);
+            }
+            * {
+                /* Reset simple pour éviter les marges navigateur par défaut. */
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body,
+            html {
+                min-height: 100%;
+                scroll-behavior: smooth;
+            }
+            body {
+                font-family: var(--font);
+                background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, var(--bg)) 0%, var(--bg) 60%), var(--bg);
+                color: var(--text);
+                overflow-x: hidden;
+                overflow-y: auto;
+                -webkit-font-smoothing: antialiased;
+            }
+            body.modal-open {
+                overflow: hidden;
+            }
+            a {
+                color: inherit;
+                text-decoration: none;
+            }
+            button,
+            input {
+                font: inherit;
+            }
+            button {
+                cursor: pointer;
+                border: 0;
+                background: none;
+            }
+            :focus-visible {
+                outline: 2px solid var(--primary);
+                outline-offset: 3px;
+                border-radius: 10px;
+            }
+            .app {
+                /* Layout principal: sidebar fixe à gauche + contenu à droite. */
+                display: grid;
+                grid-template-columns: var(--sidebar) 1fr;
+                grid-template-rows: auto 1fr;
+                min-height: 100dvh;
+            }
+            .sidebar {
+                /* Menu latéral, sticky pour rester visible pendant le scroll. */
+                grid-row: 1/-1;
+                width: var(--sidebar);
+                position: sticky;
+                top: 0;
+                height: 100dvh;
+                background: color-mix(in srgb, var(--surface) 92%, transparent);
+                border-right: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+                overflow: auto;
+                backdrop-filter:blur(14px);
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .mark {
+                width: 42px;
+                height: 42px;
+                border-radius: 14px;
+                background: var(--primary-soft);
+                display: grid;
+                place-items: center;
+                color: var(--primary);
+                border: 1px solid color-mix(in srgb,var(--primary) 20%, transparent);
+            }
+            .brand h1 {
+                font-size: 15px;
+                font-weight: 900;
+            }
+            .brand p {
+                font-size: 12px;
+                color: var(--muted);
+                margin-top: 2px;
+            }
+            .nav-label {
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.14em;
+                color: var(--faint);
+                margin-bottom: 8px;
+            }
+            .nav-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 14px;
+                border-radius: 14px;
+                color: var(--muted);
+                min-height: 44px;
+                transition: 0.18s;
+            }
+            .nav-item.active,
+            .nav-item:hover {
+                background: var(--primary-soft);
+                color: var(--text);
+            }
+            .nav-group {
+                display: grid;
+                gap: 6px;
+            }
+            .sidebar-card {
+                margin-top: auto;
+                background: linear-gradient(180deg,color-mix(in srgb,var(--primary) 10%, var(--surface-2)), var(--surface));
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                padding: 18px;
+                box-shadow: var(--shadow);
+            }
+            .app.sidebar-hidden .sidebar {
+                width: 0;
+                border-right: none;
+                padding: 0;
+                opacity: 0;
+                pointer-events: none;
+            }
+            .app.sidebar-hidden .sidebar * {
+                display: none !important;
+            }
+            .header {
+                /* Barre haute avec recherche et actions rapides. */
+                grid-column: 2;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 14px;
+                padding: 18px 24px;
+                border-bottom: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                background: color-mix(in srgb, var(--bg) 82%, transparent);
+                backdrop-filter:blur(16px);
+            }
+            .header h2 {
+                font-size: clamp(1.5rem,1.1rem + 1.3vw,2.2rem);
+                letter-spacing: -.03em;
+                font-weight: 900;
+            }
+            .header p {
+                color: var(--muted);
+                font-size: 14px;
+                margin-top: 4px;
+            }
+            .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .search {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-width: min(330px,48vw);
+                padding: 0 14px;
+                border: 1px solid color-mix(in srgb,var(--text) 12%, transparent);
+                background: var(--surface);
+                border-radius: 999px;
+                min-height: 44px;
+            }
+            .search input {
+                border: 0;
+                background: transparent;
+                width: 100%;
+                outline: none;
+            }
+            .icon-btn,
+            .pill,
+            .primary {
+                height: 44px;
+                border-radius: 999px;
+                border: 1px solid color-mix(in srgb,var(--text) 12%, transparent);
+                background: var(--surface);
+                padding: 0 16px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: 700;
+                font-size: 14px;
+                transition: 0.18s;
+            }
+            .primary {
+                background: var(--primary);
+                color: #fff;
+                border-color: transparent;
+            }
+            .primary:hover {
+                filter:brightness(.97)
+            }
+            .icon-btn:hover,
+            .pill:hover {
+                background: var(--surface-2);
+            }
+            .main {
+                /* Conteneur des sections principales du dashboard. */
+                grid-column: 2;
+                overflow: visible;
+                padding: 24px;
+                display: grid;
+                gap: 24px;
+                align-content: start;
+            }
+            .main > section,
+            .main > .hero {
+                scroll-margin-top: 24px;
+            }
+            .panel {
+                background: color-mix(in srgb,var(--surface) 94%, transparent);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 24px;
+                box-shadow: var(--shadow);
+                backdrop-filter:blur(12px);
+            }
+            .hero {
+                display: block;
+            }
+            .card,
+            .hero-main,
+            .hero-side {
+                padding: 24px;
+            }
+            .eyebrow {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 7px 10px;
+                border-radius: 999px;
+                background: var(--primary-soft);
+                color: var(--primary);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                font-size: 11px;
+                font-weight: 800;
+            }
+            .hero-main h3 {
+                font-size: clamp(1.7rem,1.2rem + 1.4vw,2.4rem);
+                line-height: 1.02;
+                letter-spacing: -.04em;
+                margin-top: 14px;
+                max-width: 16ch;
+            }
+            .hero-main p {
+                color: var(--muted);
+                margin-top: 14px;
+                max-width: 68ch;
+            }
+            .mini-stats {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-top: 22px;
+            }
+            .mini {
+                min-width: 150px;
+                padding: 14px;
+                border-radius: 16px;
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+            }
+            .mini span {
+                font-size: 11px;
+                color: var(--faint);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+            }
+            .mini strong {
+                display: block;
+                margin-top: 6px;
+                font-size: 22px;
+                font-weight: 900;
+            }
+            .signal-list {
+                display: grid;
+                gap: 12px;
+                margin-top: 14px;
+            }
+            .signal {
+                padding: 14px;
+                border-radius: 16px;
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+            }
+            .priority-block {
+                padding: 16px;
+                border-radius: 18px;
+                background: color-mix(in srgb,var(--surface) 96%, transparent);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+            }
+            .offer-category {
+                margin-bottom: 24px;
+                padding: 16px;
+                background: var(--surface);
+                border: 1px solid color-mix(in srgb,var(--text) 8%, transparent);
+                border-radius: 12px;
+            }
+            .category-header {
+                margin-bottom: 12px;
+            }
+            .category-offers {
+                display: grid;
+                gap: 8px;
+            }
+            .offer-card {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 12px;
+                padding: 14px;
+                border-radius: 14px;
+                background: var(--surface);
+                border: 1px solid color-mix(in srgb,var(--text) 8%, transparent);
+            }
+            .offer-card strong {
+                font-size: 15px;
+            }
+            .offer-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .chip {
+                display: inline-flex;
+                align-items: center;
+                padding: 5px 10px;
+                border-radius: 999px;
+                background: color-mix(in srgb,var(--primary) 8%, transparent);
+                color: var(--primary);
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .signal-top {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                align-items: center;
+            }
+            .signal p {
+                margin-top: 8px;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 7px 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 0.02em;
+            }
+            .success {
+                color: var(--success);
+                background: color-mix(in srgb,var(--success) 14%, transparent);
+            }
+            .warn {
+                color: var(--warning);
+                background: color-mix(in srgb,var(--warning) 14%, transparent);
+            }
+            .neutral {
+                color: var(--primary);
+                background: var(--primary-soft);
+            }
+            .danger {
+                color: var(--error);
+                background: color-mix(in srgb,var(--error) 14%, transparent);
+            }
+            .kpis {
+                /* Grille des indicateurs chiffrés. */
+                display: grid;
+                grid-template-columns: repeat(4,minmax(0,1fr));
+                gap: 16px;
+            }
+            .kpi {
+                padding: 20px;
+                background: var(--surface);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                box-shadow: var(--shadow);
+                display: grid;
+                gap: 10px;
+                min-height: 154px;
+            }
+            .kpi .label {
+                font-size: 11px;
+                color: var(--faint);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+            }
+            .kpi .value {
+                font-size: clamp(1.8rem,1.2rem + 1.2vw,2.4rem);
+                font-weight: 900;
+                letter-spacing: -.04em;
+            }
+            .delta {
+                font-size: 12px;
+                font-weight: 800;
+            }
+            .up {
+                color: var(--success);
+            }
+            .down {
+                color: var(--error);
+            }
+            .flat {
+                color: var(--muted);
+            }
+            .grid-2 {
+                display: grid;
+                grid-template-columns: 1.2fr 0.8fr;
+                gap: 24px;
+            }
+            .chart-wrap {
+                height: 320px;
+                margin-top: 16px;
+            }
+            .filters {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 14px;
+            }
+            .chip {
+                padding: 0 14px;
+                height: 40px;
+                border-radius: 999px;
+                border: 1px solid color-mix(in srgb,var(--text) 12%, transparent);
+                background: var(--surface);
+                color: var(--muted);
+                font-weight: 700;
+            }
+            .chip.active {
+                background: var(--primary-soft);
+                color: var(--text);
+                border-color: color-mix(in srgb,var(--primary) 25%, transparent);
+            }
+            .progress-list {
+                display: grid;
+                gap: 12px;
+                margin-top: 16px;
+            }
+            .progress-card {
+                padding: 14px;
+                border-radius: 16px;
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+            }
+            .bar {
+                height: 10px;
+                border-radius: 999px;
+                background: var(--surface);
+                overflow: hidden;
+                margin-top: 8px;
+            }
+            .bar span {
+                display: block;
+                height: 100%;
+                border-radius: inherit;
+                background: linear-gradient(90deg,var(--primary), color-mix(in srgb,var(--primary) 50%, white));
+            }
+            .table-card {
+                overflow: hidden;
+            }
+            .table-tools {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin: 16px 0;
+            }
+            .table-wrap {
+                /* Scroll horizontal pour garder le tableau lisible sur petits écrans. */
+                overflow: auto;
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                background: var(--surface-2);
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 780px;
+            }
+            td,
+            th {
+                padding: 15px 16px;
+                text-align: left;
+                border-bottom: 1px solid color-mix(in srgb,var(--text) 8%, transparent);
+                font-size: 14px;
+                vertical-align: middle;
+            }
+            th {
+                background: var(--surface-2);
+                color: var(--muted);
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                position: sticky;
+                top: 0;
+            }
+            tr:hover td {
+                background: color-mix(in srgb,var(--primary) 4%, var(--surface-2));
+            }
+            .tag {
+                display: inline-flex;
+                align-items: center;
+                padding: 6px 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 800;
+            }
+            .tag.good {
+                color: var(--success);
+                background: color-mix(in srgb,var(--success) 14%, transparent);
+            }
+            .tag.mid {
+                color: var(--warning);
+                background: color-mix(in srgb,var(--warning) 14%, transparent);
+            }
+            .tag.bad {
+                color: var(--error);
+                background: color-mix(in srgb,var(--error) 14%, transparent);
+            }
+            .automation {
+                display: grid;
+                grid-template-columns: repeat(3,minmax(0,1fr));
+                gap: 16px;
+                margin-top: 16px;
+            }
+            .automation-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 20px;
+                margin-top: 16px;
+            }
+            .auto-module {
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                padding: 18px;
+                display: grid;
+                gap: 12px;
+            }
+            .module-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .module-icon {
+                font-size: 24px;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--primary-soft);
+                border-radius: 12px;
+            }
+            .module-info {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .module-info strong {
+                font-size: 16px;
+            }
+            .module-toggle {
+                background: none;
+                border: none;
+                font-size: 16px;
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 6px;
+                transition: 0.2s;
+            }
+            .module-toggle:hover {
+                background: var(--surface);
+            }
+            .module-desc {
+                color: var(--muted);
+                font-size: 14px;
+                margin: 0;
+            }
+            .module-features {
+                display: grid;
+                gap: 6px;
+            }
+            .feature-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .feature-check {
+                font-size: 12px;
+                width: 16px;
+                text-align: center;
+            }
+            .module-controls {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .secondary {
+                background: var(--surface);
+                color: var(--text);
+                border: 1px solid color-mix(in srgb,var(--text) 20%, transparent);
+            }
+            .secondary:hover {
+                background: var(--surface-2);
+            }
+            .module-config {
+                background: var(--surface);
+                border: 1px solid color-mix(in srgb,var(--text) 8%, transparent);
+                border-radius: 12px;
+                padding: 16px;
+                margin-top: 8px;
+            }
+            .config-section {
+                margin-bottom: 16px;
+            }
+            .config-section h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text);
+            }
+            .source-status {
+                display: grid;
+                gap: 6px;
+            }
+            .source-status label {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+            }
+            .thresholds, .weights {
+                display: grid;
+                gap: 8px;
+            }
+            .thresholds label, .weights label {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 13px;
+            }
+            .thresholds input {
+                width: 60px;
+                text-align: center;
+            }
+            .followup-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                border-bottom: 1px solid color-mix(in srgb,var(--text) 5%, transparent);
+            }
+            .followup-item:last-child {
+                border-bottom: none;
+            }
+            .history-stats {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+            .stat {
+                text-align: center;
+                font-size: 13px;
+                color: var(--muted);
+            }
+            .stat strong {
+                display: block;
+                font-size: 18px;
+                color: var(--text);
+                margin-top: 2px;
+            }
+            .workflow-section {
+                margin-top: 24px;
+                padding: 20px;
+                background: linear-gradient(135deg, var(--primary-soft), color-mix(in srgb,var(--primary) 5%, var(--surface)));
+                border: 1px solid color-mix(in srgb,var(--primary) 20%, transparent);
+                border-radius: 16px;
+            }
+            .workflow-section h4 {
+                margin: 0 0 16px 0;
+                font-size: 16px;
+                font-weight: 600;
+            }
+            .workflow-steps {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+            .step {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                padding: 8px 12px;
+                border-radius: 12px;
+                background: var(--surface);
+                border: 2px solid color-mix(in srgb,var(--text) 10%, transparent);
+                min-width: 60px;
+            }
+            .step.active {
+                background: var(--primary-soft);
+                border-color: var(--primary);
+            }
+            .step-number {
+                font-size: 14px;
+                font-weight: 700;
+                color: var(--primary);
+            }
+            .step.active .step-number {
+                color: var(--primary);
+            }
+            .step-label {
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--muted);
+            }
+            .step.active .step-label {
+                color: var(--text);
+            }
+            .step-arrow {
+                font-size: 14px;
+                color: var(--muted);
+                font-weight: 300;
+            }
+            .workflow-controls {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .large {
+                padding: 12px 24px;
+                font-size: 16px;
+            }
+            .auto-box {
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                padding: 18px;
+                display: grid;
+                gap: 12px;
+                min-height: 180px;
+            }
+            .auto-box ul {
+                list-style: none;
+                display: grid;
+                gap: 8px;
+            }
+            .auto-box li {
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .auto-box li::before {
+                content: '• ';
+                color: var(--primary);
+            }
+            .section-title {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+            }
+            .section-title h3 {
+                font-size: 1.2rem;
+                font-weight: 800;
+                letter-spacing: -.02em;
+            }
+            .section-title p {
+                color: var(--muted);
+                font-size: 14px;
+                margin-top: 4px;
+            }
+            .collapse-btn {
+                border: 1px solid color-mix(in srgb,var(--text) 12%, transparent);
+                background: var(--surface);
+                color: var(--text);
+                border-radius: 999px;
+                padding: 8px 14px;
+                cursor: pointer;
+                font-weight: 700;
+                transition: 0.16s;
+            }
+            .collapse-btn:hover {
+                background: var(--surface-2);
+            }
+            .section-body {
+                display: grid;
+                gap: 16px;
+            }
+            .collapsed .section-body {
+                display: none;
+            }
+            .footer {
+                color: var(--faint);
+                font-size: 12px;
+                display: flex;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 2px 0 6px;
+            }
+            .modal,
+            .toast {
+                position: fixed;
+                z-index: 100;
+            }
+            .modal {
+                inset: 0;
+                background: rgba(0,0,0,.68);
+                display: none;
+                align-items: flex-start;
+                justify-content: center;
+                overflow-y: auto;
+                overscroll-behavior: contain;
+                padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+            }
+            .modal.open {
+                display: flex;
+            }
+            .dialog {
+                width: min(820px,92vw);
+                max-height: calc(100dvh - 36px);
+                overflow: auto;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                box-shadow: var(--shadow);
+                padding: 22px;
+                margin: auto 0;
+                animation: up 0.22s ease-out;
+            }
+            .dialog-head {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid var(--border);
+            }
+            .tabs {
+                display: flex;
+                gap: 0;
+                border-bottom: 2px solid var(--border);
+                margin: 0 -22px 18px;
+                padding: 0 22px;
+            }
+            .tab {
+                padding: 12px 18px;
+                border-bottom: 3px solid transparent;
+                color: var(--muted);
+                font-weight: 800;
+            }
+            .tab.active {
+                color: var(--primary);
+                border-bottom-color: var(--primary);
+            }
+            .out {
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                padding: 18px;
+                font-family: var(--mono);
+                white-space: pre-wrap;
+                min-height: 220px;
+                line-height: 1.7;
+                font-size: 13px;
+                color: var(--text);
+            }
+            .btn-row {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin-top: 14px;
+            }
+            .copy {
+                padding: 0 16px;
+                height: 44px;
+                border-radius: 999px;
+                border: 1px solid var(--border);
+                background: var(--surface-2);
+                font-weight: 800;
+            }
+            .toast {
+                right: 24px;
+                bottom: 24px;
+                transform: translateY(140px);
+                transition: 0.25s;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-left: 4px solid var(--primary);
+                padding: 14px 16px;
+                border-radius: 14px;
+                box-shadow: var(--shadow);
+                font-weight: 700;
+            }
+            .toast.show {
+                transform: translateY(0);
+            }
+            @keyframes up {
+                from {
+                    transform: translateY(24px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            @media (max-width:1180px) {
+                .grid-2,
+                .hero {
+                    grid-template-columns: 1fr;
+                }
+                .automation,
+                .kpis {
+                    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+                }
+            }
+            @media (max-width:920px) {
+                .app {
+                    grid-template-columns: 1fr;
+                }
+                .sidebar {
+                    position: fixed;
+                    inset: 0 auto 0 0;
+                    height: 100dvh;
+                    width: min(84vw,320px);
+                    transform: translateX(-104%);
+                    transition: 0.2s;
+                    z-index: 50;
+                }
+                .sidebar.open {
+                    transform: translateX(0);
+                }
+                .header,
+                .main {
+                    grid-column: 1;
+                }
+                .search {
+                    min-width: 0;
+                    flex: 1;
+                }
+                .automation,
+                .kpis {
+                    grid-template-columns: 1fr !important;
+                }
+            }
+            @media (max-width:640px) {
+                .header {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .header-actions {
+                    width: 100%;
+                }
+                .search {
+                    width: 100%;
+                }
+                .main {
+                    padding: 16px;
+                }
+                .dialog {
+                    width: 100%;
+                    max-height: calc(100dvh - 24px);
+                    padding: 18px;
+                    border-radius: 18px;
+                }
+                .tabs {
+                    overflow-x: auto;
+                    margin-left: -18px;
+                    margin-right: -18px;
+                    padding-left: 18px;
+                    padding-right: 18px;
+                }
+                .card,
+                .hero-main,
+                .hero-side {
+                    padding: 18px;
+                }
+            }
+            .source-item {
+                padding: 16px;
+                background: var(--surface);
+                border: 1px solid color-mix(in srgb,var(--text) 8%, transparent);
+                border-radius: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .source-item p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .source-name {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .alert-item {
+                padding: 16px;
+                background: var(--surface);
+                border: 1px solid color-mix(in srgb,var(--text) 8%, transparent);
+                border-radius: 12px;
+            }
+            .alert-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+            .alert-item p {
+                margin: 0;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .toggle {
+                position: relative;
+                display: inline-block;
+                width: 44px;
+                height: 24px;
+            }
+            .toggle input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: var(--border);
+                transition: .3s;
+                border-radius: 24px;
+            }
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .3s;
+                border-radius: 50%;
+            }
+            input:checked + .slider {
+                background-color: var(--primary);
+            }
+            input:checked + .slider:before {
+                transform: translateX(20px);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app">
+            <aside class="sidebar" id="sidebar">
+                <div class="brand">
+                    <div class="mark">
+                        <svg
+                            width="22"
+                            height="22"
+                            viewbox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"><path
+                            d="M5 16.5L10.2 11.3L13.8 14.9L19 9.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"/><path d="M15 9.7H19V13.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div>
+                        <h1>Opportunity Pulse</h1>
+                        <p>Analyse des opportunités</p>
+                    </div>
+                </div>
+                <nav>
+                    <div class="nav-group">
+                        <div class="nav-label">Pilotage</div>
+                        <a class="nav-item active" href="#overview">
+                            <strong>Vue globale</strong>
+                            <span>07</span></a>
+                        <a class="nav-item" href="#market">
+                            <strong>Marché</strong>
+                            <span>12</span></a>
+                        <a class="nav-item" href="#pipeline">
+                            <strong>Pipeline</strong>
+                            <span>18</span></a>
+                        <a class="nav-item" href="#automation">
+                            <strong>Automatisation</strong>
+                            <span>05</span></a>
+                    </div>
+                    <div class="nav-group" style="margin-top:16px">
+                        <div class="nav-label">Suivi</div>
+                        <a class="nav-item" href="#sources">
+                            <strong>Sources</strong>
+                            <span>ATS</span></a>
+                        <a class="nav-item" href="#alerts">
+                            <strong>Alertes</strong>
+                            <span>03</span></a>
+                        <a class="nav-item" href="#history-section">
+                            <strong>Historique</strong>
+                            <span id="historyNavCount">0</span></a>
+                        <a class="nav-item" href="#cv-section">
+                            <strong>CV</strong>
+                            <span>PDF</span></a>
+                        <a class="nav-item" href="#settings-section">
+                            <strong>Paramètres</strong>
+                            <span>Cron</span></a>
+                    </div>
+                </nav>
+                <section class="sidebar-card">
+                    <h3 style="font-size:15px;margin-bottom:8px">Focus du jour</h3>
+                    <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Traiter d'abord
+                        les offres fraîches, les relances en retard et les pistes à fort score.</p>
+                    <button class="primary" type="button" onclick="runSprint()">Lancer le sprint</button>
+                </section>
+            </aside>
+            <header class="header">
+                <div>
+                    <h2>Dashboard d'analyse pour opportunités</h2>
+                    <p>Jobs, stages, alternances et missions freelance dans une interface sobre
+                        orientée action.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="menuToggle" aria-label="Menu mobile">☰</button>
+                    <label class="search">
+                        <svg
+                            width="18"
+                            height="18"
+                            viewbox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input
+                            type="text"
+                            value="Python junior • Paris • Marseille • Le Havre • Bailleau-le-Pin"
+                            aria-label="Recherche"/></label>
+                    <button class="icon-btn" id="themeToggle" aria-label="Changer le thème">◐</button>
+                    <button class="primary" type="button" onclick="openModal()">✍ Générer candidature</button>
+                    <button class="primary" type="button" onclick="exportAnalysis()">Exporter l'analyse</button>
+                </div>
+            </header>
+            <main class="main" id="overview">
+                <section class="hero">
+                    <article class="panel hero-main">
+                        <div class="eyebrow">Analyse prioritaire</div>
+                        <h3>Repère plus vite les offres pertinentes et les actions à automatiser.</h3>
+                        <p>Le dashboard centralise la qualité des leads, la vitesse de réponse, le taux
+                            d'adéquation profil/offre et les tâches répétitives à déléguer à des scripts ou
+                            agents.</p>
+                        <div class="mini-stats">
+                            <div class="mini">
+                                <span>Opportunités chaudes</span>
+                                <strong id="hotCount" data-count="28">0</strong>
+                            </div>
+                            <div class="mini">
+                                <span>Match moyen</span>
+                                <strong id="avgScoreCount" data-count="84">0</strong>
+                            </div>
+                            <div class="mini">
+                                <span>Relances dues</span>
+                                <strong id="followupsCount" data-count="9">0</strong>
+                            </div>
+                        </div>
+                        <div class="priority-block" style="margin-top:24px">
+                            <div class="signal-top" style="margin-bottom:12px; gap: 10px;">
+                                <strong>Toutes les offres classées</strong>
+                                <span class="badge neutral" id="priorityCount">0</span>
+                            </div>
+                            <div id="priorityOffers" class="priority-offers">
+                                <p style="color:var(--muted); margin:0">Aucune offre disponible pour le moment. Lance le sprint pour analyser les offres.</p>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+                <section class="panel card" id="cv-section">
+                    <div class="section-title">
+                        <div>
+                            <h3>Mon CV</h3>
+                            <p>Zone d'upload, aperçu et préparation au matching automatique.</p>
+                        </div>
+                        <span class="badge neutral">PDF</span></div>
+                    <div style="display:grid;gap:14px;margin-top:16px">
+                        <div
+                            id="cvDropzone"
+                            style="border:2px dashed var(--border);border-radius:18px;padding:28px;text-align:center;background:var(--surface-2);cursor:pointer"
+                            onclick="document.getElementById('cvUploadInput').click()">
+                            <strong>Dépose ton CV ici</strong>
+                            <p style="margin-top:6px;color:var(--muted);font-size:14px">PDF uniquement. Prévu pour l'extraction de texte et le scoring des offres.</p>
+                            <small id="cvDropHint" style="color:var(--muted);font-size:12px">Clique ou dépose un fichier PDF.</small>
+                        </div>
+                        <input id="cvUploadInput" type="file" accept="application/pdf" style="display:none" />
+                        <button class="primary" type="button" onclick="document.getElementById('cvUploadInput').click()">Uploader mon CV</button>
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Statut du CV</strong>
+                                <span class="badge neutral" id="cvStatusBadge">Aucun CV</span></div>
+                            <p id="cvPreview">Charge un CV PDF pour activer le matching et l'analyse de compatibilité.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="panel card" id="market">
+                    <div class="section-title">
+                        <div>
+                            <h3>Marché de l'emploi</h3>
+                            <p>Analyse des tendances et opportunités par secteur et localisation.</p>
+                        </div>
+                        <span class="badge neutral">Analyse</span>
+                    </div>
+                    <div style="display:grid;gap:16px;margin-top:16px">
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Offres actives</strong>
+                                <span class="badge success" id="marketJobsCount">0</span>
+                            </div>
+                            <p>Nombre total d'offres collectées cette semaine.</p>
+                        </div>
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Secteurs populaires</strong>
+                                <span class="badge info">Tech, Finance, Marketing</span>
+                            </div>
+                            <p>Domaines avec le plus d'opportunités.</p>
+                        </div>
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Tendances</strong>
+                                <span class="badge warn">+15% ce mois</span>
+                            </div>
+                            <p>Évolution du nombre d'offres vs mois dernier.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="panel card" id="history-section">
+                    <div class="section-title">
+                        <div>
+                            <h3>Historique</h3>
+                            <p>Offres deja postulees ou fermees, conservees pour les retrouver sans polluer l'analyse principale.</p>
+                        </div>
+                        <span class="badge success" id="historyCount">0</span>
+                    </div>
+                    <div id="historyOffers" class="category-offers" style="display:grid;gap:8px;margin-top:16px">
+                        <p style="color:var(--muted); margin:0">Aucune offre dans l'historique.</p>
+                    </div>
+                </section>
+                <section class="panel card" id="pipeline">
+                    <div class="section-title">
+                        <div>
+                            <h3>Pipeline d'automatisation</h3>
+                            <p>Statut des tâches automatisées et flux de traitement.</p>
+                        </div>
+                        <span class="badge success">Actif</span>
+                    </div>
+                    <div style="display:grid;gap:16px;margin-top:16px">
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Dernier scraping</strong>
+                                <span class="badge neutral" id="lastScrape">Jamais</span>
+                            </div>
+                            <p>Dernière exécution du collecteur d'offres.</p>
+                        </div>
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Scoring automatique</strong>
+                                <span class="badge success" id="autoScoreStatus">Prêt</span>
+                            </div>
+                            <p>État du système de matching CV-offres.</p>
+                        </div>
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Alertes email</strong>
+                                <span class="badge warn" id="alertStatus">Désactivé</span>
+                            </div>
+                            <p>Notifications automatiques par email.</p>
+                        </div>
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Sprint automatique</strong>
+                                <span class="badge success" id="autoSprintStatus">Actif</span>
+                            </div>
+                            <p id="autoSprintInfo">Planifie un scraping + scoring toutes les heures.</p>
+                        </div>
+                        <button class="primary" type="button" onclick="runPipeline()">Lancer le pipeline</button>
+                        <button class="copy" type="button" onclick="cleanupClosedJobs()">Nettoyer offres fermees</button>
+                    </div>
+                </section>
+                <section class="panel card" id="sources">
+                    <div class="section-title">
+                        <div>
+                            <h3>Sources d'offres</h3>
+                            <p>Plateformes de recrutement surveillées et leur statut.</p>
+                        </div>
+                        <span class="badge success">6 actives</span>
+                    </div>
+                    <div style="display:grid;gap:12px;margin-top:16px">
+                        <div class="source-item">
+                            <div class="source-name">
+                                <strong>LinkedIn</strong>
+                                <span class="badge success">Actif</span>
+                            </div>
+                            <p>Source la plus productive actuellement via les endpoints publics jobs.</p>
+                        </div>
+                        <div class="source-item">
+                            <div class="source-name">
+                                <strong>HelloWork</strong>
+                                <span class="badge success">Actif</span>
+                            </div>
+                            <p>Stages et alternances via les pages publiques actuelles.</p>
+                        </div>
+                        <div class="source-item">
+                            <div class="source-name">
+                                <strong>Meteojob</strong>
+                                <span class="badge success">Actif</span>
+                            </div>
+                            <p>Volume generaliste important sur le marche francais.</p>
+                        </div>
+                        <div class="source-item">
+                            <div class="source-name">
+                                <strong>Adzuna</strong>
+                                <span class="badge success">Actif</span>
+                            </div>
+                            <p>Agregateur d'offres utile pour completer les plateformes bloquees.</p>
+                        </div>
+                        <div class="source-item">
+                            <div class="source-name">
+                                <strong>Jooble</strong>
+                                <span class="badge success">Actif</span>
+                            </div>
+                            <p>Agregateur qui renvoie un bon volume d'offres recentes.</p>
+                        </div>
+                        <div class="source-item">
+                            <div class="source-name">
+                                <strong>France Travail</strong>
+                                <span class="badge success">Actif</span>
+                            </div>
+                            <p>API officielle Offres d'emploi v2 avec tes identifiants OAuth.</p>
+                        </div>
+                        <div class="source-item">
+                            <div class="source-name">
+                                <strong>Sources bloquees</strong>
+                                <span class="badge warn">Hors sprint</span>
+                            </div>
+                            <p>Indeed, WTTJ, APEC, Glassdoor, Monster, RegionsJob, JobTeaser et Cadremploi ne sont pas lances automatiquement.</p>
+                        </div>
+                        <button class="primary" type="button" onclick="runScrape()">Lancer un scraping</button>
+                    </div>
+                </section>
+                <section class="panel card" id="alerts">
+                    <div class="section-title">
+                        <div>
+                            <h3>Alertes et notifications</h3>
+                            <p>Configuration des rappels et notifications automatiques.</p>
+                        </div>
+                        <span class="badge warn">03</span>
+                    </div>
+                    <div style="display:grid;gap:16px;margin-top:16px">
+                        <div class="alert-item">
+                            <div class="alert-header">
+                                <strong>Nouvelles offres pertinentes</strong>
+                                <label class="toggle">
+                                    <input type="checkbox" id="alertNewJobs">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <p>Recevoir un email automatique quand le sprint detecte de nouvelles offres.</p>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-header">
+                                <strong>Offres à postuler</strong>
+                                <label class="toggle">
+                                    <input type="checkbox" id="alertFollowups">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <p>Recevoir les offres prioritaires a postuler selon le score IA.</p>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-header">
+                                <strong>Resume de recherche</strong>
+                                <label class="toggle">
+                                    <input type="checkbox" id="alertReports">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <p>Recevoir un resume global: nouvelles offres, priorites, historique et sources.</p>
+                        </div>
+                        <button class="primary" type="button" onclick="testEmailAlerts()">Tester les alertes</button>
+                    </div>
+                </section>
+                <section class="panel card" id="settings-section">
+                    <div class="section-title">
+                        <div>
+                            <h3>Paramètres</h3>
+                            <p>Sources, alertes et automatisation de la veille d'opportunités.</p>
+                        </div>
+                        <span class="badge warn">Auto</span>
+                    </div>
+                    <div class="automation" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px">
+                        <div class="auto-box">
+                            <strong>Sources</strong>
+                            <ul>
+                                <li>LinkedIn</li>
+                                <li>HelloWork</li>
+                                <li>Meteojob</li>
+                                <li>Adzuna</li>
+                                <li>Jooble</li>
+                                <li>France Travail</li>
+                            </ul>
+                        </div>
+                        <div class="auto-box">
+                            <strong>Alertes email</strong>
+                            <ul>
+                                <li>Nouvelles offres ciblées</li>
+                                <li>Relances à faire</li>
+                                <li>Entretiens à venir</li>
+                            </ul>
+                        </div>
+                        <div class="auto-box">
+                            <strong>Cron</strong>
+                            <ul>
+                                <li>Scraping quotidien</li>
+                                <li>Scoring automatique</li>
+                                <li>Rapport résumé</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section class="panel card" id="automation">
+                    <div class="section-title">
+                        <div>
+                            <h3>Centre d'automatisation</h3>
+                            <p>Système intégré de collecte, scoring et suivi automatisé des candidatures.</p>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <span class="badge success">Actif</span>
+                        </div>
+                    </div>
+                    <div class="automation-grid">
+                        <!-- Collecte intelligente -->
+                        <div class="auto-module">
+                            <div class="module-header">
+                                <div class="module-icon">🔍</div>
+                                <div class="module-info">
+                                    <strong>Collecte intelligente</strong>
+                                    <span class="badge success">Opérationnel</span>
+                                </div>
+                                <button class="module-toggle" onclick="toggleModule('collecte')">⚙️</button>
+                            </div>
+                            <p class="module-desc">Agréger plusieurs sources et dédupliquer les offres similaires.</p>
+                            <div class="module-features">
+                                <div class="feature-item">
+                                    <span class="feature-check">✅</span>
+                                    <span>Scraping ciblé (LinkedIn, HelloWork, Meteojob, Adzuna, Jooble, France Travail)</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-check">✅</span>
+                                    <span>Détection mots-clés</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-check">✅</span>
+                                    <span>Alertes dès publication</span>
+                                </div>
+                            </div>
+                            <div class="module-controls">
+                                <button class="primary" onclick="runScrape()">Lancer scraping</button>
+                                <button class="secondary" onclick="configureSources()">Configurer sources</button>
+                            </div>
+                            <div class="module-config" id="collecte-config" style="display:none">
+                                <div class="config-section">
+                                    <h4>Sources actives</h4>
+                                    <div class="source-status">
+                                        <label><input type="checkbox" checked> LinkedIn</label>
+                                        <label><input type="checkbox" checked> HelloWork</label>
+                                        <label><input type="checkbox" checked> Meteojob</label>
+                                        <label><input type="checkbox" checked> Adzuna</label>
+                                        <label><input type="checkbox" checked> Jooble</label>
+                                        <label><input type="checkbox" checked> France Travail</label>
+                                        <label><input type="checkbox" disabled> Indeed (bloqué 403)</label>
+                                        <label><input type="checkbox" disabled> WTTJ (bloqué 403)</label>
+                                        <label><input type="checkbox" disabled> APEC (401)</label>
+                                        <label><input type="checkbox" disabled> JobTeaser (bloqué 403)</label>
+                                        <label><input type="checkbox" disabled> Cadremploi (bloqué 403)</label>
+                                    </div>
+                                </div>
+                                <div class="config-section">
+                                    <h4>Fréquence</h4>
+                                    <select>
+                                        <option value="manual">Manuel</option>
+                                        <option value="hourly">Toutes les heures</option>
+                                        <option value="daily">Quotidien</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scoring d'adéquation -->
+                        <div class="auto-module">
+                            <div class="module-header">
+                                <div class="module-icon">🎯</div>
+                                <div class="module-info">
+                                    <strong>Scoring d'adéquation</strong>
+                                    <span class="badge success">Opérationnel</span>
+                                </div>
+                                <button class="module-toggle" onclick="toggleModule('scoring')">⚙️</button>
+                            </div>
+                            <p class="module-desc">Attribuer une note automatique pour éviter de postuler à l'aveugle.</p>
+                            <div class="module-features">
+                                <div class="feature-item">
+                                    <span class="feature-check">✅</span>
+                                    <span>Match compétences / mission</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-check">✅</span>
+                                    <span>Compatibilité lieu et contrat</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-check">✅</span>
+                                    <span>Priorisation des offres rapides</span>
+                                </div>
+                            </div>
+                            <div class="module-controls">
+                                <button class="primary" onclick="runSprint()">Lancer scoring</button>
+                                <button class="secondary" onclick="configureScoring()">Ajuster critères</button>
+                            </div>
+                            <div class="module-config" id="scoring-config" style="display:none">
+                                <div class="config-section">
+                                    <h4>Seuils de scoring</h4>
+                                    <div class="thresholds">
+                                        <label>Hot (≥ <input type="number" value="65" min="0" max="100">%) </label>
+                                        <label>Good (<input type="number" value="40" min="0" max="100">%) </label>
+                                    </div>
+                                </div>
+                                <div class="config-section">
+                                    <h4>Poids des critères</h4>
+                                    <div class="weights">
+                                        <label>Compétences: <input type="range" min="0" max="10" value="8"></label>
+                                        <label>Localisation: <input type="range" min="0" max="10" value="6"></label>
+                                        <label>Contrat: <input type="range" min="0" max="10" value="4"></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Suivi et relance -->
+                        <div class="auto-module">
+                            <div class="module-header">
+                                <div class="module-icon">📋</div>
+                                <div class="module-info">
+                                    <strong>Suivi et relance</strong>
+                                    <span class="badge warn">Partiel</span>
+                                </div>
+                                <button class="module-toggle" onclick="toggleModule('suivi')">⚙️</button>
+                            </div>
+                            <p class="module-desc">Garder une cadence propre avec rappels et historique centralisé.</p>
+                            <div class="module-features">
+                                <div class="feature-item">
+                                    <span class="feature-check">✅</span>
+                                    <span>Templates de messages</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-check">⚠️</span>
+                                    <span>Relances automatiques</span>
+                                </div>
+                                <div class="feature-item">
+                                    <span class="feature-check">🚧</span>
+                                    <span>Journal d'entretiens</span>
+                                </div>
+                            </div>
+                            <div class="module-controls">
+                                <button class="primary" onclick="viewFollowups()">Voir relances</button>
+                                <button class="secondary" onclick="configureFollowups()">Configurer</button>
+                            </div>
+                            <div class="module-config" id="suivi-config" style="display:none">
+                                <div class="config-section">
+                                    <h4>Relances actives</h4>
+                                    <div class="followup-status">
+                                        <div class="followup-item">
+                                            <span>Relance 1 semaine</span>
+                                            <label class="toggle">
+                                                <input type="checkbox" checked>
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="followup-item">
+                                            <span>Relance 2 semaines</span>
+                                            <label class="toggle">
+                                                <input type="checkbox">
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="followup-item">
+                                            <span>Rappel entretien</span>
+                                            <label class="toggle">
+                                                <input type="checkbox" checked>
+                                                <span class="slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="config-section">
+                                    <h4>Historique</h4>
+                                    <div class="history-stats">
+                                        <div class="stat">Candidatures: <strong id="totalApplied">2</strong></div>
+                                        <div class="stat">Relances: <strong id="totalFollowups">0</strong></div>
+                                        <div class="stat">Entretiens: <strong id="totalInterviews">0</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section workflow intégré -->
+                    <div class="workflow-section">
+                        <h4>🔄 Workflow automatisé</h4>
+                        <div class="workflow-steps">
+                            <div class="step active">
+                                <span class="step-number">1</span>
+                                <span class="step-label">Collecte</span>
+                            </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step active">
+                                <span class="step-number">2</span>
+                                <span class="step-label">Scoring</span>
+                            </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step">
+                                <span class="step-number">3</span>
+                                <span class="step-label">Application</span>
+                            </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step">
+                                <span class="step-number">4</span>
+                                <span class="step-label">Suivi</span>
+                            </div>
+                        </div>
+                        <div class="workflow-controls">
+                            <button class="primary large" onclick="runFullWorkflow()">🚀 Exécuter workflow complet</button>
+                            <button class="secondary" onclick="scheduleWorkflow()">⏰ Programmer</button>
+                        </div>
+                    </div>
+                </section>
+                
+            </main>
+        </div>
+        <div class="modal" id="letterModal">
+            <div class="dialog">
+                <div class="dialog-head">
+                    <div>
+                        <div style="font-size:20px;font-weight:900;letter-spacing:-.03em">Générer une candidature</div>
+                        <div
+                            style="color:var(--muted);font-size:13px;margin-top:4px"
+                            id="modalSubtitle">Texte personnalisé pour l'offre sélectionnée</div>
+                    </div>
+                    <button class="icon-btn" onclick="closeModal()" aria-label="Fermer">×</button>
+                </div>
+                <div id="jobSelector" style="display:none;margin-top:14px">
+                    <label style="color:var(--text); font-weight:500">Sélectionner une offre :</label>
+                    <select id="jobSelectDropdown" style="width:100%; padding:8px; margin-top:8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text)">
+                        <option value="">-- Charger les offres --</option>
+                    </select>
+                </div>
+                <div style="margin-top:14px" id="matchInfo">
+                    <div class="badge success">Analyse de compatibilité</div>
+                    <p id="matchSummary" style="margin-top:10px;color:var(--muted)">Choisis une offre pour comparer avec ton CV.</p>
+                    <div id="matchResult" style="margin-top:12px;display:none">
+                        <strong id="matchScoreText"></strong>
+                        <p id="matchReasonText" style="margin-top:6px;color:var(--muted)"></p>
+                    </div>
+                    <button class="primary" type="button" id="matchBtn" onclick="evaluateMatch()">Évaluer le match</button>
+                </div>
+                <div class="tabs">
+                    <button id="letterTabButton" class="tab active" onclick="switchTab('letter', this)">Lettre de motivation</button>
+                    <button id="emailTabButton" class="tab" onclick="switchTab('email', this)">Email court</button>
+                </div>
+                <div id="tab-letter">
+                    <div class="out" id="letterOutput">Clique sur Générer pour créer ta lettre avec l'IA...</div>
+                    <div class="btn-row">
+                        <button class="primary" id="genLetterBtn" onclick="generateLetter('letter')">Générer la lettre</button>
+                        <button class="copy" onclick="copyText('letterOutput')">Copier</button>
+                        <a class="copy" id="letterPdfLink" href="#" target="_blank" rel="noopener" style="display:none">Ouvrir le PDF</a>
+                        <button class="primary" onclick="applyJob(currentJobId)">Postuler maintenant</button>
+                    </div>
+                </div>
+                <div id="tab-email" style="display:none">
+                    <div class="out" id="emailOutput">Clique sur Générer pour créer ton email avec l'IA...</div>
+                    <div class="btn-row">
+                        <button class="primary" id="genEmailBtn" onclick="generateLetter('email')">Générer l'email</button>
+                        <button class="copy" onclick="copyText('emailOutput')">Copier</button>
+                        <button class="primary" onclick="applyJob(currentJobId)">Postuler maintenant</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="toast" id="toast"></div>
+        <script>
+            // Variables globales: elles gardent l'offre sélectionnée, le format demandé et l'état du CV.
+            let currentJobId = null;
+            let selectedJobFormat = 'both';
+            let cvUploaded = false;
+            
+            const root = document.documentElement,
+                sidebar = document.getElementById('sidebar');
+            const themeToggle = document.getElementById('themeToggle'),
+                menuToggle = document.getElementById('menuToggle');
+            let theme = matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+            // Applique le thème choisi en modifiant l'attribut data-theme sur <html>.
+            root.setAttribute('data-theme', theme);
+            themeToggle.onclick = () => {
+                theme = theme === 'dark'
+                    ? 'light'
+                    : 'dark';
+                root.setAttribute('data-theme', theme);
+                toast('Thème changé', 'info')
+            };
+            menuToggle.onclick = () => sidebar
+                .classList
+                .toggle('open');
+            document.querySelectorAll('.nav-item').forEach(item => {
+                // Quand on clique sur une entrée du menu, elle devient active visuellement.
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.nav-item').forEach(link => link.classList.remove('active'));
+                    item.classList.add('active');
+                    sidebar.classList.remove('open');
+                });
+            });
+            
+            const toastEl = id => document.getElementById(id),
+                show = (m) => {
+                    // Toast = petite notification temporaire en bas de l'écran.
+                    const t = toastEl('toast');
+                    t.textContent = m;
+                    t
+                        .classList
+                        .add('show');
+                    setTimeout(() => t.classList.remove('show'), 2800)
+                };
+            function toast(msg) {
+                show(msg)
+            }
+            document
+                .querySelectorAll('[data-count]')
+                .forEach(el => {
+                    const target = +el.dataset.count;
+                    let start = performance.now();
+                    const tick = n => {
+                        let p = Math.min((n - start) / 900, 1);
+                        el.textContent = Math.round(target * (1 - (1 - p) ** 3));
+                        if (p < 1) 
+                            requestAnimationFrame(tick)
+                    };
+                    requestAnimationFrame(tick)
+                });
+            // Charger les stats au démarrage et après chaque action importante.
+            async function loadStats() {
+                try {
+                    // fetch appelle la route FastAPI /api/stats définie dans app.py.
+                    const response = await fetch('/api/stats');
+                    if (!response.ok) throw new Error('Erreur chargement stats');
+                    
+                    const stats = await response.json();
+                    // Ces compteurs alimentent les KPI visibles en haut du dashboard.
+                    const summaryCounters = [
+                        {id: 'hotCount', value: stats.hot_opportunities || 0},
+                        {id: 'avgScoreCount', value: Math.round(stats.avg_score) || 0},
+                        {id: 'followupsCount', value: stats.followups_due || 0}
+                    ];
+                    summaryCounters.forEach(({id, value}) => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.dataset.count = value;
+                            animateCount(el, value);
+                        }
+                    });
+                    document.getElementById('marketJobsCount').textContent = stats.total || 0;
+                    document.getElementById('priorityCount').textContent = stats.active_total || 0;
+                    document.getElementById('historyCount').textContent = stats.history_total || 0;
+                    document.getElementById('historyNavCount').textContent = stats.history_total || 0;
+                    renderAllOffers(stats.all_jobs || {});
+                    renderHistoryOffers((stats.all_jobs || {}).history || []);
+                    return stats;
+                } catch (error) {
+                    console.error('Erreur stats:', error);
+                }
+            }
+            async function loadAutomationStatus() {
+                // Lit l'état du sprint automatique pour afficher Actif/En cours/Pause.
+                try {
+                    const response = await fetch('/api/automation/status');
+                    if (!response.ok) throw new Error('Erreur statut automation');
+                    const data = await response.json();
+                    const badge = document.getElementById('autoSprintStatus');
+                    const info = document.getElementById('autoSprintInfo');
+                    if (!badge || !info) return;
+
+                    badge.textContent = data.running ? 'En cours' : (data.enabled ? 'Actif' : 'Pause');
+                    badge.className = data.running ? 'badge warn' : (data.enabled ? 'badge success' : 'badge neutral');
+
+                    const next = data.next_run ? new Date(data.next_run).toLocaleString() : 'prochain calcul en attente';
+                    const last = data.last_run ? new Date(data.last_run).toLocaleString() : 'jamais';
+                    const result = data.last_result
+                        ? ` | dernier: +${data.last_result.new_jobs || 0} offres, ${data.last_result.matched || 0} analyses, email ${data.last_result.email_sent ? 'envoye' : 'non envoye'}`
+                        : '';
+                    info.textContent = `Toutes les ${Math.round((data.interval_seconds || 3600) / 60)} min | dernier run: ${last} | prochain: ${next}${result}`;
+                } catch (error) {
+                    console.error('Erreur automation:', error);
+                }
+            }
+            function animateCount(el, target) {
+                // Petite animation de nombre pour rendre les changements plus lisibles.
+                let start = performance.now();
+                const tick = n => {
+                    let p = Math.min((n - start) / 900, 1);
+                    el.textContent = Math.round(target * (1 - (1 - p) ** 3));
+                    if (p < 1) requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
+            }
+            async function restoreJob(jobId) {
+                // Remet une offre fermée/postulée dans la liste principale.
+                try {
+                    const response = await fetch(`/api/jobs/${jobId}/status`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'new' })
+                    });
+                    if (!response.ok) throw new Error('Impossible de restaurer cette offre');
+                    toast('Offre remise dans les offres actives');
+                    loadStats();
+                } catch (error) {
+                    toast('Erreur: ' + error.message);
+                }
+            }
+            function renderHistoryOffers(jobs) {
+                // Construit les cartes de l'historique directement dans le DOM.
+                const container = document.getElementById('historyOffers');
+                if (!container) return;
+                container.innerHTML = '';
+
+                if (!jobs || jobs.length === 0) {
+                    container.innerHTML = '<p style="color:var(--muted); margin:0">Aucune offre dans l historique.</p>';
+                    return;
+                }
+
+                jobs.slice(0, 30).forEach(job => {
+                    const card = document.createElement('div');
+                    card.className = 'offer-card';
+                    const statusText = (job.status || 'new') === 'applied' ? 'Postule' :
+                                     (job.status || 'new') === 'closed' ? 'Fermee' : job.status;
+                    const statusColor = (job.status || 'new') === 'closed' ? 'danger' : 'success';
+                    card.innerHTML = `
+                        <div>
+                            <strong>${job.title || 'Titre indisponible'}</strong>
+                            <div class="offer-meta">
+                                <span>${job.company || 'Entreprise inconnue'}</span>
+                                <span>${job.location || 'Localisation inconnue'}</span>
+                                <span>${job.source || 'Source inconnue'}</span>
+                            </div>
+                        </div>
+                        <div style="text-align:right; display:flex; flex-direction:column; gap:8px; justify-content:center; align-items:flex-end;">
+                            <span class="chip">Score ${job.match_score || 0}%</span>
+                            <span class="badge ${statusColor}" style="font-size: 11px;">${statusText}</span>
+                            <button class="copy" onclick="restoreJob(${job.id})">Remettre actif</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+            function renderAllOffers(categorizedJobs) {
+                // Affiche les offres par catégories: prioritaires, bons matchs, nouvelles, historique.
+                const container = document.getElementById('priorityOffers');
+                if (!container) return;
+
+                const categories = {
+                    "hot_opportunities": { title: "🔥 Opportunités chaudes", color: "danger", description: "Score ≥ 65% - Excellents matches" },
+                    "good_matches": { title: "✅ Bons matches", color: "warn", description: "Score 40-64% - Intéressants" },
+                    "new": { title: "🆕 Nouvelles offres", color: "neutral", description: "À analyser" },
+                    "others": { title: "📋 Autres", color: "neutral", description: "Divers" },
+                    "history": { title: "Historique", color: "success", description: "Offres deja postulees ou fermees, masquees de l'analyse principale" }
+                };
+
+                container.innerHTML = '';
+
+                let totalDisplayed = 0;
+                for (const [categoryKey, jobs] of Object.entries(categorizedJobs)) {
+                    if (categoryKey === 'history') continue;
+                    if (!jobs || jobs.length === 0) continue;
+
+                    const category = categories[categoryKey];
+                    if (!category) continue;
+                    const section = document.createElement('div');
+                    section.className = 'offer-category';
+                    section.innerHTML = `
+                        <div class="category-header" style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong style="font-size: 16px;">${category.title}</strong>
+                                <span class="badge ${category.color}">${jobs.length}</span>
+                            </div>
+                            <p style="color: var(--muted); font-size: 13px; margin: 4px 0 0 0;">${category.description}</p>
+                        </div>
+                        <div class="category-offers" style="display: grid; gap: 8px;">
+                        </div>
+                    `;
+
+                    const offersContainer = section.querySelector('.category-offers');
+                    jobs.slice(0, 10).forEach(job => {  // Limiter à 10 par catégorie pour la lisibilité
+                        const card = document.createElement('div');
+                        card.className = 'offer-card';
+                        const statusText = (job.status || 'new') === 'new' ? 'Nouveau' :
+                                         (job.status || 'new') === 'applied' ? 'Postulé' :
+                                         (job.status || 'new') === 'interview' ? 'Entretien' :
+                                         (job.status || 'new') === 'saved' ? 'Sauvegardé' :
+                                         (job.status || 'new') === 'closed' ? 'Fermee' : job.status;
+                        const statusColor = (job.status || 'new') === 'applied' ? 'success' :
+                                          (job.status || 'new') === 'interview' ? 'warn' :
+                                          (job.status || 'new') === 'closed' ? 'danger' :
+                                          (job.status || 'new') === 'saved' ? 'neutral' : 'neutral';
+                        const actionButton = categoryKey === 'history'
+                            ? `<button class="copy" onclick="restoreJob(${job.id})">Remettre actif</button>`
+                            : `<button class="primary" onclick="applyJob(${job.id})">Postuler</button>`;
+
+                        card.innerHTML = `
+                            <div>
+                                <strong>${job.title || 'Titre indisponible'}</strong>
+                                <div class="offer-meta">
+                                    <span>${job.company || 'Entreprise inconnue'}</span>
+                                    <span>${job.location || 'Localisation inconnue'}</span>
+                                </div>
+                            </div>
+                            <div style="text-align:right; display:flex; flex-direction:column; gap:8px; justify-content:center; align-items:flex-end;">
+                                <span class="chip">Score ${job.match_score || 0}%</span>
+                                <span class="badge ${statusColor}" style="font-size: 11px;">${statusText}</span>
+                                <span class="badge neutral" style="font-size: 10px; padding: 3px 8px; text-transform: uppercase; letter-spacing: 0.5px; background: var(--primary-soft); color: var(--primary);">📍 ${job.source || 'Inconnu'}</span>
+                                ${actionButton}
+                            </div>
+                        `;
+                        offersContainer.appendChild(card);
+                        totalDisplayed++;
+                    });
+
+                    if (jobs.length > 10) {
+                        const moreDiv = document.createElement('div');
+                        moreDiv.innerHTML = `<p style="color: var(--muted); font-size: 13px; margin: 8px 0; text-align: center;">... et ${jobs.length - 10} autres offres dans cette catégorie</p>`;
+                        offersContainer.appendChild(moreDiv);
+                    }
+
+                    container.appendChild(section);
+                }
+
+                if (totalDisplayed === 0) {
+                    container.innerHTML = '<p style="color:var(--muted); margin:0">Aucune offre disponible pour le moment. Lance le sprint pour analyser les offres.</p>';
+                }
+            }
+            
+            async function loadCvStatus() {
+                // Vérifie si un CV est déjà stocké côté serveur.
+                try {
+                    const response = await fetch('/api/cv/status');
+                    if (!response.ok) throw new Error('Erreur chargement CV');
+                    const data = await response.json();
+                    cvUploaded = data.uploaded;
+                    document.getElementById('cvStatusBadge').textContent = cvUploaded ? 'CV chargé' : 'Aucun CV';
+                    document.getElementById('cvPreview').textContent = cvUploaded
+                        ? `${data.preview}… (${data.chars} caractères)`
+                        : "Charge un CV PDF pour activer le matching et l'analyse de compatibilité.";
+                } catch (error) {
+                    console.error('Erreur CV:', error);
+                }
+            }
+            
+            async function uploadCvFile(file) {
+                // Envoie le PDF au backend avec FormData, adapté aux fichiers.
+                console.log('Fonction uploadCvFile appelée avec fichier:', file);
+                if (!file) {
+                    toast('❌ Aucun fichier sélectionné');
+                    return;
+                }
+                
+                if (!file.name.toLowerCase().endsWith('.pdf')) {
+                    toast('❌ Seuls les fichiers PDF sont acceptés');
+                    return;
+                }
+                
+                toast('📤 Upload du CV en cours...');
+                
+                const form = new FormData();
+                form.append('file', file);
+                
+                try {
+                    console.log('Envoi du fichier:', file.name, 'taille:', file.size);
+                    const response = await fetch('/api/cv/upload', {
+                        method: 'POST',
+                        body: form
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Erreur réponse:', response.status, errorText);
+                        throw new Error(`Erreur ${response.status}: ${errorText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Upload réussi:', data);
+                    
+                    cvUploaded = true;
+                    document.getElementById('cvStatusBadge').textContent = 'CV chargé';
+                    document.getElementById('cvStatusBadge').className = 'badge success';
+                    document.getElementById('cvPreview').textContent = `${data.preview}… (${data.chars} caractères)`;
+                    toast('✅ CV uploadé avec succès');
+                    
+                    // Recharger les stats pour mettre à jour le compteur CV
+                    loadStats();
+                    
+                } catch (error) {
+                    console.error('Erreur upload CV:', error);
+                    toast('❌ Erreur upload CV: ' + error.message);
+                }
+            }
+            
+            document.getElementById('cvUploadInput').addEventListener('change', (event) => {
+                console.log('Événement change sur cvUploadInput:', event.target.files);
+                const file = event.target.files[0];
+                uploadCvFile(file);
+            });
+            
+            const cvDropzone = document.getElementById('cvDropzone');
+            if (cvDropzone) {
+                // Gestion du glisser-déposer du CV sur la zone prévue.
+                cvDropzone.addEventListener('dragover', (event) => {
+                    event.preventDefault();
+                    cvDropzone.style.opacity = '0.8';
+                    cvDropzone.style.borderColor = 'var(--primary)';
+                });
+                cvDropzone.addEventListener('dragleave', () => {
+                    cvDropzone.style.opacity = '1';
+                    cvDropzone.style.borderColor = 'var(--border)';
+                });
+                cvDropzone.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    cvDropzone.style.opacity = '1';
+                    cvDropzone.style.borderColor = 'var(--border)';
+                    const files = event.dataTransfer.files;
+                    console.log('Événement drop avec fichiers:', files);
+                    if (files.length > 0) {
+                        uploadCvFile(files[0]);
+                    }
+                });
+            }
+            
+            async function evaluateMatch(jobId) {
+                // Demande au backend de comparer l'offre au texte extrait du CV.
+                if (!jobId && !currentJobId) {
+                    toast('Sélectionne d’abord une offre.');
+                    return;
+                }
+                const targetId = jobId || currentJobId;
+                if (!cvUploaded) {
+                    document.getElementById('matchSummary').textContent = 'Charge ton CV avant d’évaluer la compatibilité.';
+                    return;
+                }
+                const summary = document.getElementById('matchSummary');
+                const resultBlock = document.getElementById('matchResult');
+                const scoreText = document.getElementById('matchScoreText');
+                const reasonText = document.getElementById('matchReasonText');
+                summary.textContent = 'Analyse en cours…';
+                resultBlock.style.display = 'none';
+                try {
+                    const response = await fetch(`/api/jobs/${targetId}/match`, {
+                        method: 'POST'
+                    });
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error);
+                    }
+                    const data = await response.json();
+                    scoreText.textContent = `Score : ${data.score}%`;
+                    reasonText.textContent = data.reason;
+                    resultBlock.style.display = 'block';
+                    if (data.available === false) {
+                        summary.textContent = 'Offre fermee ou indisponible, masquee de la liste principale.';
+                        toast('Offre deplacee dans l historique');
+                        loadStats();
+                        return;
+                    }
+                    summary.textContent = data.score >= 65 ? 'Potentiel match ✅' : 'Match fragile ⚠️';
+                } catch (error) {
+                    summary.textContent = 'Impossible d’évaluer le match pour l’instant.';
+                    toast('❌ Erreur d’analyse');
+                    console.error('Erreur match:', error);
+                }
+            }
+            
+            window.addEventListener('load', () => {
+                // Initialisation de la page: données, CV, automation, puis rafraîchissement périodique.
+                console.log('Page chargée, vérification des fonctions:');
+                console.log('openModal:', typeof openModal);
+                console.log('exportAnalysis:', typeof exportAnalysis);
+                console.log('runSprint:', typeof runSprint);
+                console.log('uploadCvFile:', typeof uploadCvFile);
+                
+                loadStats();
+                loadCvStatus();
+                loadAutomationStatus();
+                setInterval(loadAutomationStatus, 60000);
+            });
+            // Charger les offres et remplir le menu déroulant de la modal.
+            async function loadAndSelectJobs() {
+                try {
+                    const response = await fetch('/api/jobs');
+                    if (!response.ok) throw new Error('Erreur chargement offres');
+                    
+                    const jobs = await response.json();
+                    const dropdown = document.getElementById('jobSelectDropdown');
+                    dropdown.innerHTML = '<option value="">Sélectionner une offre...</option>';
+                    
+                    jobs.slice(0, 50).forEach(job => {
+                        const score = job.match_score ? ` (${job.match_score}%)` : '';
+                        const option = document.createElement('option');
+                        option.value = job.id;
+                        option.textContent = `${job.title} - ${job.company}${score}`;
+                        dropdown.appendChild(option);
+                    });
+                    
+                    dropdown.onchange = (e) => {
+                        currentJobId = e.target.value ? parseInt(e.target.value, 10) : null;
+                        if (currentJobId) {
+                            const job = jobs.find(j => j.id === currentJobId);
+                            if (job) {
+                                document.getElementById('modalSubtitle').textContent = `${job.title} chez ${job.company}`;
+                                evaluateMatch(currentJobId);
+                            }
+                        }
+                    };
+                    
+                    toast('Offres chargées!');
+                } catch (error) {
+                    toast('Erreur: ' + error.message);
+                    console.error(error);
+                }
+            }
+            
+            function openModal() {
+                // Ouvre la fenêtre de génération de candidature.
+                console.log('Bouton Générer candidature cliqué - ouverture modal');
+                console.log('Ouverture de la modal, currentJobId:', currentJobId);
+                if (!currentJobId) {
+                    console.log('Chargement des offres...');
+                    loadAndSelectJobs().then(() => {
+                        console.log('Offres chargées, affichage du sélecteur');
+                        document.getElementById('jobSelector').style.display = 'block';
+                    }).catch(error => {
+                        console.error('Erreur chargement offres:', error);
+                        toast('❌ Erreur chargement offres');
+                    });
+                }
+                document.getElementById('letterModal').classList.add('open');
+                document.body.classList.add('modal-open');
+                console.log('Modal ouverte');
+            }
+            function closeModal() {
+                // Ferme la modal et réactive le scroll de la page.
+                document
+                    .getElementById('letterModal')
+                    .classList
+                    .remove('open');
+                document.body.classList.remove('modal-open');
+            }
+            function switchTab(fmt, btn) {
+                // Alterne entre l'onglet lettre et l'onglet email.
+                document
+                    .querySelectorAll('.tab')
+                    .forEach(t => t.classList.remove('active'));
+                btn
+                    .classList
+                    .add('active');
+                document
+                    .getElementById('tab-letter')
+                    .style
+                    .display = fmt === 'letter'
+                        ? 'block'
+                        : 'none';
+                document
+                    .getElementById('tab-email')
+                    .style
+                    .display = fmt === 'email'
+                        ? 'block'
+                        : 'none'
+            }
+            async function generateLetter(fmt) {
+                // Appelle /api/jobs/{id}/letter pour générer lettre/email avec l'IA.
+                if (!currentJobId) {
+                    toast('❌ Aucune offre sélectionnée');
+                    return;
+                }
+                
+                selectedJobFormat = fmt;
+                const letterOut = document.getElementById('letterOutput');
+                const emailOut = document.getElementById('emailOutput');
+                const pdfLink = document.getElementById('letterPdfLink');
+                
+                letterOut.textContent = '⏳ Génération de la lettre...';
+                emailOut.textContent = '⏳ Génération de l\'email...';
+                if (pdfLink) {
+                    pdfLink.style.display = 'none';
+                    pdfLink.removeAttribute('href');
+                }
+                
+                try {
+                    const response = await fetch(`/api/jobs/${currentJobId}/letter`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ format: fmt })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (fmt === 'letter' || fmt === 'both') {
+                        letterOut.textContent = result.letter || 'Erreur de génération';
+                        if (result.paths?.letter_pdf_url && pdfLink) {
+                            pdfLink.href = result.paths.letter_pdf_url;
+                            pdfLink.style.display = 'inline-flex';
+                        }
+                    }
+                    if (fmt === 'email' || fmt === 'both') {
+                        emailOut.textContent = result.email || 'Erreur de génération';
+                    }
+                    
+                    toast('✅ Texte généré avec l\'IA!');
+                    openModal();
+                } catch (error) {
+                    letterOut.textContent = `❌ Erreur: ${error.message}`;
+                    toast(`❌ Erreur: ${error.message}`);
+                }
+            }
+            
+            async function applyJob(jobId) {
+                // Prépare une candidature complète et applique la stratégie du backend.
+                if (!jobId) {
+                    toast('❌ Aucune offre sélectionnée');
+                    return;
+                }
+
+                currentJobId = jobId;
+                const letterOut = document.getElementById('letterOutput');
+                const emailOut = document.getElementById('emailOutput');
+                const pdfLink = document.getElementById('letterPdfLink');
+
+                letterOut.textContent = '⏳ Création de la candidature...';
+                emailOut.textContent = '⏳ Création de l\'email...';
+                if (pdfLink) {
+                    pdfLink.style.display = 'none';
+                    pdfLink.removeAttribute('href');
+                }
+
+                try {
+                    const response = await fetch(`/api/jobs/${jobId}/apply`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ send_email: true })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error);
+                    }
+
+                    const data = await response.json();
+                    // Le backend renvoie à la fois les textes générés et l'action recommandée.
+                    if (data.result?.letter) {
+                        letterOut.textContent = data.result.letter;
+                        if (data.paths?.letter_pdf_url && pdfLink) {
+                            pdfLink.href = data.paths.letter_pdf_url;
+                            pdfLink.style.display = 'inline-flex';
+                        }
+                    }
+                    if (data.result?.email) {
+                        emailOut.textContent = data.result.email;
+                    }
+
+                    const action = data.action || {};
+                    const subtitle = document.getElementById('modalSubtitle');
+                    if (action.method === 'email') {
+                        subtitle.textContent = action.sent
+                            ? `Email envoyé directement à ${action.recipient}`
+                            : action.recruiter_email
+                                ? `Prêt à envoyer : ${action.recruiter_email}`
+                                : 'Analyse email : recruteur non détecté, vérifie les instructions';
+                    } else if (action.method === 'website') {
+                        subtitle.textContent = `Postule via le site : ${action.apply_url || 'Lien indisponible'}`;
+                    } else {
+                        subtitle.textContent = `Action recommandée : ${action.instructions || 'Voir procédure'}`;
+                    }
+
+                    if (action.method === 'website' && action.apply_url) {
+                        window.open(action.apply_url, '_blank');
+                    }
+
+                    if (action.method === 'email' && action.recruiter_email && !action.sent) {
+                        toast('✅ Candidature prête, vérifie le destinataire et envoie manuellement si nécessaire');
+                    } else {
+                        toast(action.sent ? '✅ Candidature envoyée' : '✅ Candidature préparée');
+                    }
+                    openModal();
+                    switchTab('letter', document.getElementById('letterTabButton'));
+                    loadStats();
+                } catch (error) {
+                    letterOut.textContent = `❌ Erreur: ${error.message}`;
+                    toast(`❌ Erreur: ${error.message}`);
+                }
+            }
+            
+            function copyText(id) {
+                // Copie le contenu d'un bloc texte dans le presse-papiers.
+                navigator.clipboard.writeText(document.getElementById(id).textContent);
+                toast('Copié');
+            }
+            
+            // Fonctions d'automatisation: elles déclenchent les modules depuis les boutons.
+            function toggleModule(moduleId) {
+                // Affiche/masque la configuration d'un module.
+                const config = document.getElementById(moduleId + '-config');
+                if (config) {
+                    config.style.display = config.style.display === 'none' ? 'block' : 'none';
+                }
+            }
+            
+            async function runFullWorkflow() {
+                // Enchaîne scraping, scoring, puis rafraîchissement du dashboard.
+                toast('🚀 Lancement du workflow complet...');
+                try {
+                    // Étape 1: Scraping
+                    await runScrape();
+                    // Étape 2: Scoring
+                    await runSprint();
+                    // Étape 3: Refresh de l'affichage
+                    await loadStats();
+                    toast('✅ Workflow complet terminé!');
+                } catch (error) {
+                    toast('❌ Erreur dans le workflow: ' + error.message);
+                }
+            }
+            
+            function scheduleWorkflow() {
+                // Placeholder: la planification fine n'est pas encore branchée côté backend.
+                toast('⏰ Planification à venir...');
+                // TODO: Implémenter la planification
+            }
+            
+            function configureSources() {
+                toggleModule('collecte');
+                document.getElementById('collecte-config').scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            function configureScoring() {
+                toggleModule('scoring');
+                document.getElementById('scoring-config').scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            function configureFollowups() {
+                toggleModule('suivi');
+                document.getElementById('suivi-config').scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            function viewFollowups() {
+                // TODO: Ouvrir une vue détaillée des relances
+                toast('📋 Fonctionnalité de relances à développer');
+            }
+            
+            // Nouvelles fonctions pour les sections principales du dashboard.
+            async function runPipeline() {
+                // Déclenche le scraping sur toutes les sources et localisations configurées.
+                try {
+                    toast('🚀 Lancement du pipeline...');
+                    const response = await fetch('/api/scrape', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sources: ['linkedin', 'hellowork', 'meteojob', 'adzuna', 'jooble', 'france-travail'],
+                            locations: ['Paris', 'Marseille', 'Le Havre', 'Bailleau-le-Pin']
+                        })
+                    });
+                    if (!response.ok) throw new Error('Erreur pipeline');
+                    const result = await response.json();
+                    document.getElementById('lastScrape').textContent = new Date().toLocaleString();
+                    document.getElementById('lastScrape').className = 'badge success';
+                    toast('✅ Pipeline lancé avec succès');
+                    loadAutomationStatus();
+                } catch (error) {
+                    toast('❌ Erreur pipeline: ' + error.message);
+                    console.error(error);
+                }
+            }
+            
+            async function runScrape() {
+                // Alias utilisé par certains boutons: scrape puis recharge les chiffres.
+                await runPipeline();
+                loadStats();
+            }
+            async function cleanupClosedJobs() {
+                // Demande au backend de détecter les offres expirées ou fermées.
+                try {
+                    toast('Verification des offres fermees...');
+                    const response = await fetch('/api/jobs/cleanup', { method: 'POST' });
+                    if (!response.ok) throw new Error('Erreur nettoyage');
+                    const result = await response.json();
+                    toast(`${result.closed || 0} offre(s) deplacee(s) dans l historique`);
+                    loadStats();
+                } catch (error) {
+                    toast('Erreur nettoyage: ' + error.message);
+                    console.error(error);
+                }
+            }
+            
+            async function testEmailAlerts() {
+                // Envoie un email de test/résumé pour vérifier la configuration SMTP.
+                try {
+                    toast('📧 Test des alertes email...');
+                    const response = await fetch('/api/email/test', {
+                        method: 'POST'
+                    });
+                    if (!response.ok) throw new Error('Erreur test email');
+                    const result = await response.json();
+                    document.getElementById('alertStatus').textContent = result.sent ? 'Test envoyé' : 'Échec';
+                    document.getElementById('alertStatus').className = result.sent ? 'badge success' : 'badge error';
+                    const detail = result.email_status?.last_error || (
+                        result.email_status?.looks_like_app_password === false
+                            ? 'Mot de passe SMTP invalide: Gmail demande un App Password de 16 caracteres.'
+                            : 'Verifie la configuration SMTP.'
+                    );
+                    toast(result.sent ? '✅ Email de test envoyé' : '❌ Échec envoi email: ' + detail);
+                } catch (error) {
+                    toast('❌ Erreur test email: ' + error.message);
+                    console.error(error);
+                }
+            }
+            
+            async function runSprint() {
+                // Sprint = scraping + matching IA des offres non scorées.
+                console.log('Fonction runSprint appelée');
+                toast('🏃 Lancement du sprint quotidien...');
+                try {
+                    await runPipeline();
+                    const response = await fetch('/api/match-all?sync=true', {
+                        method: 'POST'
+                    });
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error);
+                    }
+                    const data = await response.json();
+                    toast(data.status === 'done' ? '✅ Sprint terminé: scraping + matching effectué' : '✅ Sprint démarré');
+                    loadStats();
+                    loadAutomationStatus();
+                } catch (error) {
+                    toast('❌ Erreur sprint: ' + error.message);
+                    console.error('Erreur sprint:', error);
+                }
+            }
+            
+            async function exportAnalysis() {
+                // Exporte les offres visibles en JSON téléchargeable.
+                console.log('Fonction exportAnalysis appelée');
+                try {
+                    toast('📊 Export de l\'analyse...');
+                    const response = await fetch('/api/jobs');
+                    if (!response.ok) throw new Error('Erreur récupération offres');
+                    
+                    const jobs = await response.json();
+                    const dataStr = JSON.stringify(jobs, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(dataBlob);
+                    link.download = `analyse-offres-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    toast('✅ Analyse exportée');
+                } catch (error) {
+                    toast('❌ Erreur export: ' + error.message);
+                    console.error(error);
+                }
+            }
+            
+            document
+                .getElementById('letterModal')
+                .addEventListener('click', e => {
+                    // Clic sur le fond sombre de la modal = fermeture.
+                    if (e.target.id === 'letterModal') 
+                        closeModal()
+                });
+            document.addEventListener('keydown', e => {
+                // Échap ferme la modal et le menu mobile.
+                if (e.key === 'Escape') {
+                    closeModal();
+                    sidebar.classList.remove('open');
+                }
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,30 @@
+# ── Web framework ──────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9      # pour l'upload de fichiers
+
+# ── PDF ────────────────────────────────────────────────────
+pypdf==4.2.0                 # extraction texte PDF
+
+# ── Scraping ───────────────────────────────────────────────
+requests==2.32.3
+beautifulsoup4==4.12.3
+
+# ── IA - Groq (version stable compatible Python 3.14) ─────
+groq==0.4.2
+httpx==0.24.1
+
+# ── Optionnel : Playwright (LinkedIn avec auth) ────────────
+# playwright==1.44.0
+# Après install : playwright install chromium
+
+# ── Source officielle France Travail ───────────────────────
+# Aucun package en plus: le scraper utilise requests + OAuth2.
+# Variables à définir pour activer cette source:
+# FRANCE_TRAVAIL_CLIENT_ID=...
+# FRANCE_TRAVAIL_CLIENT_SECRET=...
+
+# ── Agrégateurs d'offres optionnels ────────────────────────
+# ADZUNA_APP_ID=...
+# ADZUNA_APP_KEY=...
+# JOOBLE_API_KEY=...

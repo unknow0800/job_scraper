@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Opportunity Pulse — Dashboard</title>
+        <link rel="preconnect" href="https://api.fontshare.com"/>
+        <link
+            href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&f[]=jet-brains-mono@400,700&display=swap"
+            rel="stylesheet"/>
+        <style>
+            :root,
+            [data-theme="light"] {
+                --bg: #f7f6f2;
+                --surface: #fcfbf8;
+                --surface-2: #f4f1eb;
+                --border: #ded9d2;
+                --text: #23211d;
+                --muted: #6f6a63;
+                --faint: #9a958d;
+                --primary: #01696f;
+                --primary-soft: #dbeae8;
+                --success: #437a22;
+                --warning: #9c5b1f;
+                --error: #a13544;
+                --shadow: 0 14px 30px rgba(24,21,17,.08);
+                --radius: 18px;
+                --radius-sm: 12px;
+                --sidebar: 284px;
+                --font: 'Satoshi',system-ui,sans-serif;
+                --mono: 'JetBrains Mono',monospace;
+            }
+            [data-theme="dark"] {
+                --bg: #171614;
+                --surface: #1d1c1a;
+                --surface-2: #23221f;
+                --border: #34322f;
+                --text: #e6e2db;
+                --muted: #a5a099;
+                --faint: #76716b;
+                --primary: #4f98a3;
+                --primary-soft: rgba(79,152,163,.14);
+                --shadow: 0 18px 36px rgba(0,0,0,.28);
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body,
+            html {
+                height: 100%;
+            }
+            body {
+                font-family: var(--font);
+                background: radial-gradient(circle at top right, rgba(1,105,111,.09), transparent 25%), var(--bg);
+                color: var(--text);
+                overflow: hidden;
+                -webkit-font-smoothing: antialiased;
+            }
+            a {
+                color: inherit;
+                text-decoration: none;
+            }
+            button,
+            input {
+                font: inherit;
+            }
+            button {
+                cursor: pointer;
+                border: 0;
+                background: none;
+            }
+            :focus-visible {
+                outline: 2px solid var(--primary);
+                outline-offset: 3px;
+                border-radius: 10px;
+            }
+            .app {
+                display: grid;
+                grid-template-columns: var(--sidebar) 1fr;
+                grid-template-rows: auto 1fr;
+                height: 100vh;
+            }
+            .sidebar {
+                grid-row: 1/-1;
+                background: color-mix(in srgb, var(--surface) 92%, transparent);
+                border-right: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+                overflow: auto;
+                backdrop-filter:blur(14px);
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .mark {
+                width: 42px;
+                height: 42px;
+                border-radius: 14px;
+                background: var(--primary-soft);
+                display: grid;
+                place-items: center;
+                color: var(--primary);
+                border: 1px solid color-mix(in srgb,var(--primary) 20%, transparent);
+            }
+            .brand h1 {
+                font-size: 15px;
+                font-weight: 900;
+            }
+            .brand p {
+                font-size: 12px;
+                color: var(--muted);
+                margin-top: 2px;
+            }
+            .nav-label {
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.14em;
+                color: var(--faint);
+                margin-bottom: 8px;
+            }
+            .nav-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 14px;
+                border-radius: 14px;
+                color: var(--muted);
+                min-height: 44px;
+                transition: 0.18s;
+            }
+            .nav-item.active,
+            .nav-item:hover {
+                background: var(--primary-soft);
+                color: var(--text);
+            }
+            .nav-group {
+                display: grid;
+                gap: 6px;
+            }
+            .sidebar-card {
+                margin-top: auto;
+                background: linear-gradient(180deg,color-mix(in srgb,var(--primary) 10%, var(--surface-2)), var(--surface));
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                padding: 18px;
+                box-shadow: var(--shadow);
+            }
+            .header {
+                grid-column: 2;
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 14px;
+                padding: 18px 24px;
+                border-bottom: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                background: color-mix(in srgb, var(--bg) 82%, transparent);
+                backdrop-filter:blur(16px);
+            }
+            .header h2 {
+                font-size: clamp(1.5rem,1.1rem + 1.3vw,2.2rem);
+                letter-spacing: -.03em;
+                font-weight: 900;
+            }
+            .header p {
+                color: var(--muted);
+                font-size: 14px;
+                margin-top: 4px;
+            }
+            .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .search {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                min-width: min(330px,48vw);
+                padding: 0 14px;
+                border: 1px solid color-mix(in srgb,var(--text) 12%, transparent);
+                background: var(--surface);
+                border-radius: 999px;
+                min-height: 44px;
+            }
+            .search input {
+                border: 0;
+                background: transparent;
+                width: 100%;
+                outline: none;
+            }
+            .icon-btn,
+            .pill,
+            .primary {
+                height: 44px;
+                border-radius: 999px;
+                border: 1px solid color-mix(in srgb,var(--text) 12%, transparent);
+                background: var(--surface);
+                padding: 0 16px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: 700;
+                font-size: 14px;
+                transition: 0.18s;
+            }
+            .primary {
+                background: var(--primary);
+                color: #fff;
+                border-color: transparent;
+            }
+            .primary:hover {
+                filter:brightness(.97)
+            }
+            .icon-btn:hover,
+            .pill:hover {
+                background: var(--surface-2);
+            }
+            .main {
+                grid-column: 2;
+                overflow: auto;
+                padding: 24px;
+                display: grid;
+                gap: 24px;
+                align-content: start;
+            }
+            .panel {
+                background: color-mix(in srgb,var(--surface) 94%, transparent);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 24px;
+                box-shadow: var(--shadow);
+                backdrop-filter:blur(12px);
+            }
+            .hero {
+                display: grid;
+                grid-template-columns: 1.4fr 0.9fr;
+                gap: 24px;
+            }
+            .card,
+            .hero-main,
+            .hero-side {
+                padding: 24px;
+            }
+            .eyebrow {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 7px 10px;
+                border-radius: 999px;
+                background: var(--primary-soft);
+                color: var(--primary);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                font-size: 11px;
+                font-weight: 800;
+            }
+            .hero-main h3 {
+                font-size: clamp(1.7rem,1.2rem + 1.4vw,2.4rem);
+                line-height: 1.02;
+                letter-spacing: -.04em;
+                margin-top: 14px;
+                max-width: 16ch;
+            }
+            .hero-main p {
+                color: var(--muted);
+                margin-top: 14px;
+                max-width: 68ch;
+            }
+            .mini-stats {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-top: 22px;
+            }
+            .mini {
+                min-width: 150px;
+                padding: 14px;
+                border-radius: 16px;
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+            }
+            .mini span {
+                font-size: 11px;
+                color: var(--faint);
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+            }
+            .mini strong {
+                display: block;
+                margin-top: 6px;
+                font-size: 22px;
+                font-weight: 900;
+            }
+            .signal-list {
+                display: grid;
+                gap: 12px;
+                margin-top: 14px;
+            }
+            .signal {
+                padding: 14px;
+                border-radius: 16px;
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+            }
+            .signal-top {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                align-items: center;
+            }
+            .signal p {
+                margin-top: 8px;
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 7px 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 0.02em;
+            }
+            .success {
+                color: var(--success);
+                background: color-mix(in srgb,var(--success) 14%, transparent);
+            }
+            .warn {
+                color: var(--warning);
+                background: color-mix(in srgb,var(--warning) 14%, transparent);
+            }
+            .neutral {
+                color: var(--primary);
+                background: var(--primary-soft);
+            }
+            .danger {
+                color: var(--error);
+                background: color-mix(in srgb,var(--error) 14%, transparent);
+            }
+            .kpis {
+                display: grid;
+                grid-template-columns: repeat(4,minmax(0,1fr));
+                gap: 16px;
+            }
+            .kpi {
+                padding: 20px;
+                background: var(--surface);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                box-shadow: var(--shadow);
+                display: grid;
+                gap: 10px;
+                min-height: 154px;
+            }
+            .kpi .label {
+                font-size: 11px;
+                color: var(--faint);
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+            }
+            .kpi .value {
+                font-size: clamp(1.8rem,1.2rem + 1.2vw,2.4rem);
+                font-weight: 900;
+                letter-spacing: -.04em;
+            }
+            .delta {
+                font-size: 12px;
+                font-weight: 800;
+            }
+            .up {
+                color: var(--success);
+            }
+            .down {
+                color: var(--error);
+            }
+            .flat {
+                color: var(--muted);
+            }
+            .grid-2 {
+                display: grid;
+                grid-template-columns: 1.2fr 0.8fr;
+                gap: 24px;
+            }
+            .chart-wrap {
+                height: 320px;
+                margin-top: 16px;
+            }
+            .filters {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 14px;
+            }
+            .chip {
+                padding: 0 14px;
+                height: 40px;
+                border-radius: 999px;
+                border: 1px solid color-mix(in srgb,var(--text) 12%, transparent);
+                background: var(--surface);
+                color: var(--muted);
+                font-weight: 700;
+            }
+            .chip.active {
+                background: var(--primary-soft);
+                color: var(--text);
+                border-color: color-mix(in srgb,var(--primary) 25%, transparent);
+            }
+            .progress-list {
+                display: grid;
+                gap: 12px;
+                margin-top: 16px;
+            }
+            .progress-card {
+                padding: 14px;
+                border-radius: 16px;
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+            }
+            .bar {
+                height: 10px;
+                border-radius: 999px;
+                background: var(--surface);
+                overflow: hidden;
+                margin-top: 8px;
+            }
+            .bar span {
+                display: block;
+                height: 100%;
+                border-radius: inherit;
+                background: linear-gradient(90deg,var(--primary), color-mix(in srgb,var(--primary) 50%, white));
+            }
+            .table-card {
+                overflow: hidden;
+            }
+            .table-tools {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin: 16px 0;
+            }
+            .table-wrap {
+                overflow: auto;
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                background: var(--surface-2);
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 780px;
+            }
+            td,
+            th {
+                padding: 15px 16px;
+                text-align: left;
+                border-bottom: 1px solid color-mix(in srgb,var(--text) 8%, transparent);
+                font-size: 14px;
+                vertical-align: middle;
+            }
+            th {
+                background: var(--surface-2);
+                color: var(--muted);
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                position: sticky;
+                top: 0;
+            }
+            tr:hover td {
+                background: color-mix(in srgb,var(--primary) 4%, var(--surface-2));
+            }
+            .tag {
+                display: inline-flex;
+                align-items: center;
+                padding: 6px 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 800;
+            }
+            .tag.good {
+                color: var(--success);
+                background: color-mix(in srgb,var(--success) 14%, transparent);
+            }
+            .tag.mid {
+                color: var(--warning);
+                background: color-mix(in srgb,var(--warning) 14%, transparent);
+            }
+            .tag.bad {
+                color: var(--error);
+                background: color-mix(in srgb,var(--error) 14%, transparent);
+            }
+            .automation {
+                display: grid;
+                grid-template-columns: repeat(3,minmax(0,1fr));
+                gap: 16px;
+                margin-top: 16px;
+            }
+            .auto-box {
+                background: var(--surface-2);
+                border: 1px solid color-mix(in srgb,var(--text) 10%, transparent);
+                border-radius: 18px;
+                padding: 18px;
+                display: grid;
+                gap: 12px;
+                min-height: 180px;
+            }
+            .auto-box ul {
+                list-style: none;
+                display: grid;
+                gap: 8px;
+            }
+            .auto-box li {
+                color: var(--muted);
+                font-size: 14px;
+            }
+            .auto-box li::before {
+                content: '• ';
+                color: var(--primary);
+            }
+            .section-title {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+            }
+            .section-title h3 {
+                font-size: 1.2rem;
+                font-weight: 800;
+                letter-spacing: -.02em;
+            }
+            .section-title p {
+                color: var(--muted);
+                font-size: 14px;
+                margin-top: 4px;
+            }
+            .footer {
+                color: var(--faint);
+                font-size: 12px;
+                display: flex;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 2px 0 6px;
+            }
+            .modal,
+            .toast {
+                position: fixed;
+                z-index: 100;
+            }
+            .modal {
+                inset: 0;
+                background: rgba(0,0,0,.68);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 18px;
+            }
+            .modal.open {
+                display: flex;
+            }
+            .dialog {
+                width: min(820px,92vw);
+                max-height: 90vh;
+                overflow: auto;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                box-shadow: var(--shadow);
+                padding: 22px;
+                animation: up 0.22s ease-out;
+            }
+            .dialog-head {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid var(--border);
+            }
+            .tabs {
+                display: flex;
+                gap: 0;
+                border-bottom: 2px solid var(--border);
+                margin: 0 -22px 18px;
+                padding: 0 22px;
+            }
+            .tab {
+                padding: 12px 18px;
+                border-bottom: 3px solid transparent;
+                color: var(--muted);
+                font-weight: 800;
+            }
+            .tab.active {
+                color: var(--primary);
+                border-bottom-color: var(--primary);
+            }
+            .out {
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                padding: 18px;
+                font-family: var(--mono);
+                white-space: pre-wrap;
+                min-height: 220px;
+                line-height: 1.7;
+                font-size: 13px;
+                color: var(--text);
+            }
+            .btn-row {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin-top: 14px;
+            }
+            .copy {
+                padding: 0 16px;
+                height: 44px;
+                border-radius: 999px;
+                border: 1px solid var(--border);
+                background: var(--surface-2);
+                font-weight: 800;
+            }
+            .toast {
+                right: 24px;
+                bottom: 24px;
+                transform: translateY(140px);
+                transition: 0.25s;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-left: 4px solid var(--primary);
+                padding: 14px 16px;
+                border-radius: 14px;
+                box-shadow: var(--shadow);
+                font-weight: 700;
+            }
+            .toast.show {
+                transform: translateY(0);
+            }
+            @keyframes up {
+                from {
+                    transform: translateY(24px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            @media (max-width:1180px) {
+                .grid-2,
+                .hero {
+                    grid-template-columns: 1fr;
+                }
+                .automation,
+                .kpis {
+                    grid-template-columns: repeat(2,minmax(0,1fr));
+                }
+            }
+            @media (max-width:920px) {
+                .app {
+                    grid-template-columns: 1fr;
+                }
+                .sidebar {
+                    position: fixed;
+                    inset: 0 auto 0 0;
+                    width: min(84vw,320px);
+                    transform: translateX(-104%);
+                    transition: 0.2s;
+                    z-index: 50;
+                }
+                .sidebar.open {
+                    transform: translateX(0);
+                }
+                .header,
+                .main {
+                    grid-column: 1;
+                }
+                .search {
+                    min-width: 0;
+                    flex: 1;
+                }
+                .automation,
+                .kpis {
+                    grid-template-columns: 1fr;
+                }
+            }
+            @media (max-width:640px) {
+                .header {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .header-actions {
+                    width: 100%;
+                }
+                .search {
+                    width: 100%;
+                }
+                .main {
+                    padding: 16px;
+                }
+                .card,
+                .hero-main,
+                .hero-side {
+                    padding: 18px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app">
+            <aside class="sidebar" id="sidebar">
+                <div class="brand">
+                    <div class="mark">
+                        <svg
+                            width="22"
+                            height="22"
+                            viewbox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"><path
+                            d="M5 16.5L10.2 11.3L13.8 14.9L19 9.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"/><path d="M15 9.7H19V13.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div>
+                        <h1>Opportunity Pulse</h1>
+                        <p>Analyse des opportunités</p>
+                    </div>
+                </div>
+                <nav>
+                    <div class="nav-group">
+                        <div class="nav-label">Pilotage</div>
+                        <a class="nav-item active" href="#overview">
+                            <strong>Vue globale</strong>
+                            <span>07</span></a>
+                        <a class="nav-item" href="#market">
+                            <strong>Marché</strong>
+                            <span>12</span></a>
+                        <a class="nav-item" href="#pipeline">
+                            <strong>Pipeline</strong>
+                            <span>18</span></a>
+                        <a class="nav-item" href="#automation">
+                            <strong>Automatisation</strong>
+                            <span>05</span></a>
+                    </div>
+                    <div class="nav-group" style="margin-top:16px">
+                        <div class="nav-label">Suivi</div>
+                        <a class="nav-item" href="#sources">
+                            <strong>Sources</strong>
+                            <span>ATS</span></a>
+                        <a class="nav-item" href="#alerts">
+                            <strong>Alertes</strong>
+                            <span>03</span></a>
+                        <a class="nav-item" href="#cv-section">
+                            <strong>CV</strong>
+                            <span>PDF</span></a>
+                        <a class="nav-item" href="#settings-section">
+                            <strong>Paramètres</strong>
+                            <span>Cron</span></a>
+                    </div>
+                </nav>
+                <section class="sidebar-card">
+                    <h3 style="font-size:15px;margin-bottom:8px">Focus du jour</h3>
+                    <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Traiter d'abord
+                        les offres fraîches, les relances en retard et les pistes à fort score.</p>
+                    <button class="primary" type="button">Lancer le sprint</button>
+                </section>
+            </aside>
+            <header class="header">
+                <div>
+                    <h2>Dashboard d'analyse pour opportunités</h2>
+                    <p>Jobs, stages, alternances et missions freelance dans une interface sobre
+                        orientée action.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" id="menuToggle" aria-label="Menu mobile">☰</button>
+                    <label class="search">
+                        <svg
+                            width="18"
+                            height="18"
+                            viewbox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input
+                            type="text"
+                            value="Python junior • stage data • remote partiel"
+                            aria-label="Recherche"/></label>
+                    <button class="icon-btn" id="themeToggle" aria-label="Changer le thème">◐</button>
+                    <button class="primary" type="button" onclick="openModal()">✍ Générer candidature</button>
+                    <button class="primary" type="button">Exporter l'analyse</button>
+                </div>
+            </header>
+            <main class="main" id="overview">
+                <section class="hero">
+                    <article class="panel hero-main">
+                        <div class="eyebrow">Analyse prioritaire</div>
+                        <h3>Repère plus vite les offres pertinentes et les actions à automatiser.</h3>
+                        <p>Le dashboard centralise la qualité des leads, la vitesse de réponse, le taux
+                            d'adéquation profil/offre et les tâches répétitives à déléguer à des scripts ou
+                            agents.</p>
+                        <div class="mini-stats">
+                            <div class="mini">
+                                <span>Opportunités chaudes</span>
+                                <strong data-count="28">0</strong>
+                            </div>
+                            <div class="mini">
+                                <span>Match moyen</span>
+                                <strong data-count="84">0</strong>
+                            </div>
+                            <div class="mini">
+                                <span>Relances dues</span>
+                                <strong data-count="9">0</strong>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+                <section class="panel card" id="cv-section">
+                    <div class="section-title">
+                        <div>
+                            <h3>Mon CV</h3>
+                            <p>Zone d'upload, aperçu et préparation au matching automatique.</p>
+                        </div>
+                        <span class="badge neutral">PDF</span></div>
+                    <div style="display:grid;gap:14px;margin-top:16px">
+                        <div
+                            style="border:2px dashed var(--border);border-radius:18px;padding:28px;text-align:center;background:var(--surface-2)">
+                            <strong>Dépose ton CV ici</strong>
+                            <p style="margin-top:6px;color:var(--muted);font-size:14px">PDF uniquement. Prévu pour l'extraction de texte et le scoring des offres.</p>
+                        </div>
+                        <div class="signal">
+                            <div class="signal-top">
+                                <strong>Aperçu extrait</strong>
+                                <span class="badge neutral">1 248 caractères</span></div>
+                            <p>Compétences web, JavaScript, Python, SQL, API, GitHub, travail en équipe.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="panel card" id="settings-section">
+                    <div class="section-title">
+                        <div>
+                            <h3>Paramètres</h3>
+                            <p>Sources, alertes et automatisation de la veille d'opportunités.</p>
+                        </div>
+                        <span class="badge warn">Auto</span></div>
+                    <div class="automation">
+                        <div class="auto-box">
+                            <strong>Sources</strong>
+                            <ul>
+                                <li>LinkedIn</li>
+                                <li>Indeed</li>
+                                <li>WTTJ</li>
+                                <li>APEC</li>
+                            </ul>
+                        </div>
+                        <div class="auto-box">
+                            <strong>Alertes email</strong>
+                            <ul>
+                                <li>Nouvelles offres ciblées</li>
+                                <li>Relances à faire</li>
+                                <li>Entretiens à venir</li>
+                            </ul>
+                        </div>
+                        <div class="auto-box">
+                            <strong>Cron</strong>
+                            <ul>
+                                <li>Scraping quotidien</li>
+                                <li>Scoring automatique</li>
+                                <li>Rapport résumé</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section class="panel card" id="automation">
+                    <div class="section-title">
+                        <div>
+                            <h3>Blocs d'automatisation recommandés</h3>
+                            <p>Les pièces à brancher ensuite pour industrialiser la recherche sans perdre la
+                                qualité du ciblage.</p>
+                        </div>
+                        <span class="badge neutral">Roadmap</span></div>
+                    <div class="automation">
+                        <div class="auto-box">
+                            <strong>Collecte intelligente</strong>
+                            <p style="color:var(--muted)">Agréger plusieurs sources et dédupliquer les offres similaires.</p>
+                            <ul>
+                                <li>Scraping ciblé.</li>
+                                <li>Détection mots-clés.</li>
+                                <li>Alertes dès publication.</li>
+                            </ul>
+                        </div>
+                        <div class="auto-box">
+                            <strong>Scoring d'adéquation</strong>
+                            <p style="color:var(--muted)">Attribuer une note automatique pour éviter de postuler à l'aveugle.</p>
+                            <ul>
+                                <li>Match compétences / mission.</li>
+                                <li>Compatibilité lieu et contrat.</li>
+                                <li>Priorisation des offres rapides.</li>
+                            </ul>
+                        </div>
+                        <div class="auto-box">
+                            <strong>Suivi et relance</strong>
+                            <p style="color:var(--muted)">Garder une cadence propre avec rappels et historique centralisé.</p>
+                            <ul>
+                                <li>Templates de messages.</li>
+                                <li>Relances automatiques.</li>
+                                <li>Journal d'entretiens.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <div class="footer">
+                    <span>Prototype front prêt à connecter à Airtable, Notion, Supabase ou API d'annonces.</span><span>Style sobre, sections analytiques, base responsive.</span></div>
+            </main>
+        </div>
+        <div class="modal" id="letterModal">
+            <div class="dialog">
+                <div class="dialog-head">
+                    <div>
+                        <div style="font-size:20px;font-weight:900;letter-spacing:-.03em">Générer une candidature</div>
+                        <div
+                            style="color:var(--muted);font-size:13px;margin-top:4px"
+                            id="modalSubtitle">Texte personnalisé pour l'offre sélectionnée</div>
+                    </div>
+                    <button class="icon-btn" onclick="closeModal()" aria-label="Fermer">×</button>
+                </div>
+                <div style="margin-top:14px" id="jobSelector" style="display:none">
+                    <label style="color:var(--text); font-weight:500">Sélectionner une offre :</label>
+                    <select id="jobSelectDropdown" style="width:100%; padding:8px; margin-top:8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text)">
+                        <option value="">-- Charger les offres --</option>
+                    </select>
+                </div>
+                <div style="margin-top:14px" id="matchInfo">
+                    <div class="badge success">Analyse de compatibilité</div>
+                    <p style="margin-top:10px;color:var(--muted)">Score basé sur le poste, la localisation, la stack et le niveau d'expérience.</p>
+                </div>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('letter', this)">Lettre de motivation</button>
+                    <button class="tab" onclick="switchTab('email', this)">Email court</button>
+                </div>
+                <div id="tab-letter">
+                    <div class="out" id="letterOutput">Clique sur Générer pour créer ta lettre avec l'IA...</div>
+                    <div class="btn-row">
+                        <button class="primary" id="genLetterBtn" onclick="generateLetter('letter')">Générer la lettre</button>
+                        <button class="copy" onclick="copyText('letterOutput')">Copier</button>
+                    </div>
+                </div>
+                <div id="tab-email" style="display:none">
+                    <div class="out" id="emailOutput">Clique sur Générer pour créer ton email avec l'IA...</div>
+                    <div class="btn-row">
+                        <button class="primary" id="genEmailBtn" onclick="generateLetter('email')">Générer l'email</button>
+                        <button class="copy" onclick="copyText('emailOutput')">Copier</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="toast" id="toast"></div>
+        <script>
+            // Variables globales
+            let currentJobId = null;
+            let selectedJobFormat = 'both';
+            
+            const root = document.documentElement,
+                sidebar = document.getElementById('sidebar');
+            const themeToggle = document.getElementById('themeToggle'),
+                menuToggle = document.getElementById('menuToggle');
+            let theme = matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+            root.setAttribute('data-theme', theme);
+            themeToggle.onclick = () => {
+                theme = theme === 'dark'
+                    ? 'light'
+                    : 'dark';
+                root.setAttribute('data-theme', theme);
+                toast('Thème changé', 'info')
+            };
+            menuToggle.onclick = () => sidebar
+                .classList
+                .toggle('open');
+            const toastEl = id => document.getElementById(id),
+                show = (m) => {
+                    const t = toastEl('toast');
+                    t.textContent = m;
+                    t
+                        .classList
+                        .add('show');
+                    setTimeout(() => t.classList.remove('show'), 2800)
+                };
+            function toast(msg) {
+                show(msg)
+            }
+            document
+                .querySelectorAll('[data-count]')
+                .forEach(el => {
+                    const target = +el.dataset.count;
+                    let start = performance.now();
+                    const tick = n => {
+                        let p = Math.min((n - start) / 900, 1);
+                        el.textContent = Math.round(target * (1 - (1 - p) ** 3));
+                        if (p < 1) 
+                            requestAnimationFrame(tick)
+                    };
+                    requestAnimationFrame(tick)
+                });
+            const ctx = document.getElementById('trendChart');
+            let chart;
+            function build() {
+                if (chart) 
+                    chart.destroy();
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [
+                            'S1',
+                            'S2',
+                            'S3',
+                            'S4',
+                            'S5',
+                            'S6',
+                            'S7',
+                            'S8'
+                        ],
+                        datasets: [
+                            {
+                                label: 'Opportunités détectées',
+                                data: [
+                                    18,
+                                    24,
+                                    22,
+                                    31,
+                                    29,
+                                    34,
+                                    37,
+                                    41
+                                ],
+                                borderColor: getComputedStyle(root)
+                                    .getPropertyValue('--primary')
+                                    .trim(),
+                                backgroundColor: 'rgba(1,105,111,.10)',
+                                fill: true,
+                                tension: .36,
+                                pointRadius: 0,
+                                borderWidth: 2.4
+                            }, {
+                                label: 'Score moyen',
+                                data: [
+                                    61,
+                                    66,
+                                    64,
+                                    72,
+                                    75,
+                                    77,
+                                    81,
+                                    84
+                                ],
+                                borderColor: getComputedStyle(root)
+                                    .getPropertyValue('--success')
+                                    .trim(),
+                                tension: .36,
+                                pointRadius: 0,
+                                borderDash: [
+                                    6, 6
+                                ],
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: getComputedStyle(root)
+                                        .getPropertyValue('--muted')
+                                        .trim(),
+                                    usePointStyle: true,
+                                    font: {
+                                        family: 'Satoshi',
+                                        size: 12,
+                                        weight: '700'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: getComputedStyle(root)
+                                    .getPropertyValue('--surface')
+                                    .trim(),
+                                titleColor: getComputedStyle(root)
+                                    .getPropertyValue('--text')
+                                    .trim(),
+                                bodyColor: getComputedStyle(root)
+                                    .getPropertyValue('--muted')
+                                    .trim(),
+                                borderColor: getComputedStyle(root)
+                                    .getPropertyValue('--border')
+                                    .trim(),
+                                borderWidth: 1,
+                                padding: 12
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: getComputedStyle(root)
+                                        .getPropertyValue('--faint')
+                                        .trim(),
+                                    font: {
+                                        family: 'JetBrains Mono',
+                                        size: 11
+                                    }
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(120,120,120,.12)'
+                                },
+                                ticks: {
+                                    color: getComputedStyle(root)
+                                        .getPropertyValue('--faint')
+                                        .trim(),
+                                    font: {
+                                        family: 'JetBrains Mono',
+                                        size: 11
+                                    }
+                                },
+                                border: {
+                                    display: false
+            
+            // Charger les stats au démarrage
+            async function loadStats() {
+                try {
+                    const response = await fetch('/api/stats');
+                    if (!response.ok) throw new Error('Erreur chargement stats');
+                    
+                    const stats = await response.json();
+                    document.querySelectorAll('[data-count]').forEach((el, idx) => {
+                        if (idx === 0) el.dataset.count = stats.total || 0;
+                        else if (idx === 1) el.dataset.count = stats.sources || 0;
+                        else if (idx === 2) el.dataset.count = stats.scored || 0;
+                        else if (idx === 3) el.dataset.count = Math.round(stats.avg_score) || 0;
+                    });
+                    
+                    document.querySelectorAll('[data-count]').forEach(el => {
+                        const target = +el.dataset.count;
+                        let start = performance.now();
+                        const tick = n => {
+                            let p = Math.min((n - start) / 900, 1);
+                            el.textContent = Math.round(target * (1 - (1 - p) ** 3));
+                            if (p < 1) requestAnimationFrame(tick);
+                        };
+                        requestAnimationFrame(tick);
+                    });
+                    return stats;
+                } catch (error) {
+                    console.error('Erreur stats:', error);
+                }
+            }
+            
+            window.addEventListener('load', () => {
+                build();
+                loadStats();
+            });
+            themeToggle.addEventListener('click', () => setTimeout(build, 30));
+            // Charger et sélectionner une offre
+            async function loadAndSelectJobs() {
+                try {
+                    const response = await fetch('/api/jobs');
+                    if (!response.ok) throw new Error('Erreur chargement offres');
+                    
+                    const jobs = await response.json();
+                    const dropdown = document.getElementById('jobSelectDropdown');
+                    dropdown.innerHTML = '<option value="">Sélectionner une offre...</option>';
+                    
+                    jobs.slice(0, 50).forEach(job => {
+                        const score = job.match_score ? ` (${job.match_score}%)` : '';
+                        const option = document.createElement('option');
+                        option.value = job.id;
+                        option.textContent = `${job.title} - ${job.company}${score}`;
+                        dropdown.appendChild(option);
+                    });
+                    
+                    dropdown.addEventListener('change', (e) => {
+                        currentJobId = parseInt(e.target.value);
+                        if (currentJobId) {
+                            const job = jobs.find(j => j.id === currentJobId);
+                            if (job) {
+                                document.getElementById('modalSubtitle').textContent = `${job.title} chez ${job.company}`;
+                            }
+                        }
+                    });
+                    
+                    toast('Offres chargées!');
+                } catch (error) {
+                    toast('Erreur: ' + error.message);
+                    console.error(error);
+                }
+            }
+            
+            function openModal() {
+                if (!currentJobId) {
+                    loadAndSelectJobs().then(() => {
+                        document.getElementById('jobSelector').style.display = 'block';
+                    });
+                }
+                document.getElementById('letterModal').classList.add('open');
+            }
+            function closeModal() {
+                document
+                    .getElementById('letterModal')
+                    .classList
+                    .remove('open')
+            }
+            function switchTab(fmt, btn) {
+                document
+                    .querySelectorAll('.tab')
+                    .forEach(t => t.classList.remove('active'));
+                btn
+                    .classList
+                    .add('active');
+                document
+                    .getElementById('tab-letter')
+                    .style
+                    .display = fmt === 'letter'
+                        ? 'block'
+                        : 'none';
+                document
+                    .getElementById('tab-email')
+                    .style
+                    .display = fmt === 'email'
+                        ? 'block'
+                        : 'none'
+            }
+            async function generateLetter(fmt) {
+                if (!currentJobId) {
+                    toast('❌ Aucune offre sélectionnée');
+                    return;
+                }
+                
+                selectedJobFormat = fmt;
+                const letterOut = document.getElementById('letterOutput');
+                const emailOut = document.getElementById('emailOutput');
+                
+                letterOut.textContent = '⏳ Génération de la lettre...';
+                emailOut.textContent = '⏳ Génération de l\'email...';
+                
+                try {
+                    const response = await fetch(`/api/jobs/${currentJobId}/letter`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ format: fmt })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.text();
+                        throw new Error(error);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (fmt === 'letter' || fmt === 'both') {
+                        letterOut.textContent = result.letter || 'Erreur de génération';
+                    }
+                    if (fmt === 'email' || fmt === 'both') {
+                        emailOut.textContent = result.email || 'Erreur de génération';
+                    }
+                    
+                    toast('✅ Texte généré avec l\'IA!');
+                    openModal();
+                } catch (error) {
+                    letterOut.textContent = `❌ Erreur: ${error.message}`;
+                    toast(`❌ Erreur: ${error.message}`);
+                }
+            }
+ function copyText(
+                    id
+                ) {
+                    navigator
+                        .clipboard
+                        .writeText(document.getElementById(id).textContent);
+                    toast('Copié')
+                }
+                document
+                    .getElementById('letterModal')
+                    .addEventListener('click', e => {
+                        if (e.target.id === 'letterModal') 
+                            closeModal()
+                    });
+        </script>
+    </body>
+</html>
